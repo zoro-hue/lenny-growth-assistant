@@ -289,11 +289,13 @@ class AgentService:
             registry.search_tool.retrieved_chunks
             + registry.ship30_tool.retrieved_chunks
             + registry.artifact_tool.retrieved_chunks
+            + registry.compare_tool.retrieved_chunks
         )
         essay_result = registry.ship30_tool.last_essay_result
         art_gen_result = registry.artifact_tool.last_artifact_result
+        compare_result = registry.compare_tool.last_comparison_result
 
-        # Check if ship30 tool or artifact tool reported insufficient evidence
+        # Check if ship30 tool, artifact tool, or compare tool reported insufficient evidence
         if essay_result and essay_result.get("status") in ("insufficient_evidence", "low-evidence"):
             return AgentExecutionResult(
                 content=essay_result.get("content", ""),
@@ -306,6 +308,15 @@ class AgentService:
         if art_gen_result and art_gen_result.get("status") == "low-evidence":
             return AgentExecutionResult(
                 content=art_gen_result.get("content", ""),
+                status="low-evidence",
+                citations=[],
+                requested_provider=requested_provider,
+                actual_provider=actual_provider,
+                fallback_reason=fallback_reason,
+            )
+        if compare_result and compare_result.get("status") == "insufficient_evidence":
+            return AgentExecutionResult(
+                content=compare_result.get("content", ""),
                 status="low-evidence",
                 citations=[],
                 requested_provider=requested_provider,
@@ -378,6 +389,8 @@ class AgentService:
                     f"The complete ~{artifact_data['word_count']}-word playbook with a 1-3-1 hook, 4-stage operational framework, "
                     "benchmark matrix, and tactical 7-step checklist is open in the Artifact Workbench to your right."
                 )
+        elif compare_result and compare_result.get("status") in ("complete", "partial_evidence"):
+            final_content = compare_result.get("content", "")
         elif not final_content:
             final_content = cls._synthesize_grounded_fallback(query, retrieved_chunks)
 

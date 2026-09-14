@@ -238,211 +238,358 @@ Organic expansion should be built directly into the workflow—shared dashboards
 
 export const MOCK_SESSIONS: Session[] = [
   {
-    id: 'session-1',
-    title: 'B2B SaaS Retention & Cohort Flattening',
+    id: 'demo-balfour-channel-model',
+    title: 'Brian Balfour — Channel Model Fit',
     createdAt: new Date(Date.now() - 3600000 * 2).toISOString(),
     updatedAt: new Date(Date.now() - 3600000 * 2).toISOString(),
     activeModelId: 'openai-cloud',
-    artifactIds: ['artifact-1'],
+    artifactIds: [],
     messages: [
       {
-        id: 'm1-1',
+        id: 'm-balfour-1',
         role: 'user',
-        content: 'How do top product leaders on Lenny\'s Podcast determine whether their retention curve is healthy or fatally leaky?',
+        content: 'Why does Brian Balfour argue that traditional acquisition funnels are dead, and how does Channel-Model Fit work?',
         timestamp: '14:20',
       },
       {
-        id: 'm1-2',
+        id: 'm-balfour-2',
         role: 'assistant',
         timestamp: '14:21',
         status: 'complete',
-        content: `Based on podcast discussions with Casey Winters, Elena Verna, and Brian Balfour, assessing retention health comes down to one non-negotiable mathematical requirement: **the cohort retention curve must flatten parallel to the x-axis**.
+        evidenceStrength: 'high',
+        evidenceLabel: '2 transcript sources · 1 speaker',
+        followUpSuggestions: [
+          'Compare Brian Balfour and Elena Verna on growth loops',
+          'What metric should I track for Channel-Model Fit?',
+          'Turn this into a playbook',
+          'Write a Ship 30/30 essay',
+        ],
+        content: `Based on Brian Balfour's Four Fits Framework on Lenny's Podcast (Episode #112), distribution channels do not bend to your product—your product must bend to the channel.
 
-### 1. The Asymptote Rule
-Casey Winters emphasizes that if your retention curve continues to decline monotonically toward zero, you do not have Product-Market Fit. Top-of-funnel acquisition, growth hacks, and paid spend only rent users when the asymptote is missing.
+### 1. Products Are Built to Fit Channels
+Distribution channels (Google SEO, Meta ads, Virality, App Stores) are external platforms with their own rules. You cannot build a product and then 'find a channel'; the product characteristics must be engineered specifically to exploit the natural dynamics of the channel.
 
-### 2. Natural Problem Frequency Alignment
-Elena Verna points out that you cannot diagnose retention without first mapping your metric to the product's natural cadence. Measuring daily active usage for a monthly financial close tool creates false alarms, while measuring monthly usage for a developer code review tool masks dangerous churn.
-
-### 3. Actionable Retention Diagnostic
-- **Check month 3 to month 6 stability:** For B2B SaaS, the retention floor between Month 3 and Month 6 should not drop by more than 2-3 percentage points.
-- **Isolate your high-conviction ICP:** General churn is often just bad acquisition targeting. Filter the cohort to only ideal accounts.`,
+### 2. Channel-Model Fit & The Growth Danger Zone
+Your pricing model determines what Customer Acquisition Cost (CAC) you can afford:
+- **Low ARPU ($10/mo):** Requires low CAC channels such as virality, UGC, or organic search.
+- **High ARPU ($100k+/yr):** Can support enterprise sales, high-touch onboarding, and multi-month sales cycles.
+- **The Danger Zone:** Companies with ARPU too high for frictionless self-serve but too low to support direct sales reps get trapped without a viable channel.`,
         citations: [
           {
-            id: 'cit-1',
-            episodeNumber: 42,
-            episodeTitle: 'Casey Winters on Growth Loops, Retention, and Why Blended Metrics Lie',
-            guest: 'Casey Winters',
-            guestRole: 'Former CPO at Eventbrite, Growth Lead at Pinterest',
-            timestamp: '15:20',
-            quoteExcerpt: 'Product-market fit is revealed when a cohort curve stops dropping and runs flat. If you don\'t have that horizontal floor, nothing else you do matters. You are merely renting users rather than building an enduring business.',
-            episodeUrl: 'https://www.youtube.com/watch?v=WlRfyEpAKxw',
+            id: 'cit-balfour-1',
+            episodeNumber: 112,
+            episodeTitle: 'Brian Balfour on the Four Fits Framework and Why Growth Is a System',
+            guest: 'Brian Balfour',
+            guestRole: 'Founder & CEO of Reforge, Former VP Growth at HubSpot',
+            timestamp: '00:01:28',
+            quoteExcerpt: 'Distribution channels—whether it is Google SEO, Facebook ads, Apple App Store, or Virality—do not care about your product. You do not control the rules of Google or Meta; they control their algorithms.',
+            episodeUrl: 'https://www.youtube.com/watch?v=BrianBalfourGrowth',
+            whyThisSource: 'Direct evidence from Brian Balfour supporting the Channel-Model Fit argument.',
           },
           {
-            id: 'cit-2',
-            episodeNumber: 88,
-            episodeTitle: 'Elena Verna on PLG, B2B Retention Benchmarks, and Monetization Loops',
-            guest: 'Elena Verna',
-            guestRole: 'Head of Growth at Lovable, Former Interim CMO at Miro & Amplitude',
-            timestamp: '28:44',
-            quoteExcerpt: 'B2B growth loops must align with the natural cadence of the organization. Trying to create daily habits for quarterly problems always creates churn.',
-            episodeUrl: 'https://www.youtube.com/watch?v=Tlx4fxzuHNw',
+            id: 'cit-balfour-2',
+            episodeNumber: 112,
+            episodeTitle: 'Brian Balfour on the Four Fits Framework and Why Growth Is a System',
+            guest: 'Brian Balfour',
+            guestRole: 'Founder & CEO of Reforge, Former VP Growth at HubSpot',
+            timestamp: '00:02:20',
+            quoteExcerpt: 'Your pricing model determines what CAC you can afford. If your Average Revenue Per User (ARPU) is $10 a month, you cannot use an outbound sales team or expensive enterprise marketing—the math simply will not work.',
+            episodeUrl: 'https://www.youtube.com/watch?v=BrianBalfourGrowth',
+            whyThisSource: 'Direct evidence from Brian Balfour on CAC alignment with pricing model.',
           },
         ],
-      },
-      {
-        id: 'm1-3',
-        role: 'user',
-        content: 'Write an essay summarizing this as an actionable playbook for our product team.',
-        timestamp: '14:24',
-      },
-      {
-        id: 'm1-4',
-        role: 'assistant',
-        timestamp: '14:25',
-        status: 'complete',
-        artifactId: 'artifact-1',
-        content: `I've synthesized a comprehensive Ship 30/30 playbook titled **"B2B SaaS Retention Playbook: Cohort Flattening and Natural Frequency"** grounded in the transcript frameworks of Casey Winters and Elena Verna.
-
-The document includes cohort benchmark tables across SMB, Mid-Market, and Enterprise, mathematical code patterns, and an operational checklist. You can inspect and export the full text in the Artifact Workbench on the right.`,
       },
     ],
   },
   {
-    id: 'session-2',
-    title: 'Product-Market Fit Engine & Superhuman',
+    id: 'demo-winters-retention',
+    title: 'Retention Curves — What Actually Matters',
+    createdAt: new Date(Date.now() - 3600000 * 3).toISOString(),
+    updatedAt: new Date(Date.now() - 3600000 * 3).toISOString(),
+    activeModelId: 'ollama-local',
+    artifactIds: [],
+    messages: [
+      {
+        id: 'm-winters-1',
+        role: 'user',
+        content: 'How does Casey Winters recommend measuring true product-market fit using cohort retention curves?',
+        timestamp: '13:10',
+      },
+      {
+        id: 'm-winters-2',
+        role: 'assistant',
+        timestamp: '13:11',
+        status: 'complete',
+        evidenceStrength: 'high',
+        evidenceLabel: '2 transcript sources · 1 speaker',
+        followUpSuggestions: [
+          'Compare Casey Winters and Brian Balfour on retention',
+          'How does this apply to PLG?',
+          'Turn this into a playbook',
+          'Write a Ship 30/30 essay',
+        ],
+        content: `On Episode 42 of Lenny's Podcast, Casey Winters articulates the single quantitative indicator of real Product-Market Fit:
+
+### The Asymptote Floor
+Product-market fit is revealed exclusively when a cohort retention curve stops declining and runs completely flat, parallel to the horizontal x-axis by Month 3 or Month 6. If the curve continues dropping monotonically toward zero, you do not have PMF, regardless of top-of-funnel conversion or user signups.
+
+### Benchmarks by Business Model
+- **Consumer Subscription / Social:** A retention floor of **20% to 30%** can build a massive business if organic acquisition is massive.
+- **B2B SaaS:** Requires a logo retention floor of **70% to 80%**, and Net Revenue Retention (NRR) above **110% to 120%** via seat and usage expansion.`,
+        citations: [
+          {
+            id: 'cit-winters-1',
+            episodeNumber: 42,
+            episodeTitle: 'Casey Winters on Growth Loops, Retention, and Why Blended Metrics Lie',
+            guest: 'Casey Winters',
+            guestRole: 'Former CPO at Eventbrite, Growth Lead at Pinterest',
+            timestamp: '00:00:44',
+            quoteExcerpt: 'Product-market fit is revealed when a cohort retention curve stops dropping and runs completely flat parallel to the horizontal axis. If you don\'t have that horizontal floor by Month 3 or Month 6, nothing else you do matters.',
+            episodeUrl: 'https://www.youtube.com/watch?v=WlRfyEpAKxw',
+            whyThisSource: 'Empirical methodology from Casey Winters on cohort retention flattening.',
+          },
+          {
+            id: 'cit-winters-2',
+            episodeNumber: 42,
+            episodeTitle: 'Casey Winters on Growth Loops, Retention, and Why Blended Metrics Lie',
+            guest: 'Casey Winters',
+            guestRole: 'Former CPO at Eventbrite, Growth Lead at Pinterest',
+            timestamp: '00:01:25',
+            quoteExcerpt: 'In consumer subscription or social, a flat retention curve at 20% to 30% can build a massive business... In B2B SaaS, your logo retention floor needs to be 70% or 80%, and your Net Revenue Retention (NRR) should be over 110% to 120%.',
+            episodeUrl: 'https://www.youtube.com/watch?v=WlRfyEpAKxw',
+            whyThisSource: 'Benchmark criteria for cohort asymptotes across consumer and B2B SaaS.',
+          },
+        ],
+      },
+    ],
+  },
+  {
+    id: 'demo-ship30-pricing',
+    title: 'Ship 30/30 — Pricing Strategy',
+    createdAt: new Date(Date.now() - 3600000 * 4).toISOString(),
+    updatedAt: new Date(Date.now() - 3600000 * 4).toISOString(),
+    activeModelId: 'openai-cloud',
+    artifactIds: ['artifact-1'],
+    messages: [
+      {
+        id: 'm-ship30-1',
+        role: 'user',
+        content: 'Write a Ship 30/30 essay on pricing strategy and channel-model fit.',
+        timestamp: '12:00',
+      },
+      {
+        id: 'm-ship30-2',
+        role: 'assistant',
+        timestamp: '12:01',
+        status: 'complete',
+        artifactId: 'artifact-1',
+        evidenceStrength: 'limited',
+        evidenceLabel: '1 relevant transcript source',
+        followUpSuggestions: [
+          'How do I implement this framework step-by-step?',
+          'What metric should I track?',
+          'Compare this with Elena Verna\'s view',
+          'Write a Ship 30/30 essay',
+        ],
+        content: `I've synthesized a comprehensive Ship 30 for 30 playbook titled **"The Channel-Model Pricing Law: Why Your Business Model Dictates Acquisition"** grounded in transcript frameworks from Brian Balfour.
+
+The complete ~1,180-word playbook with a 1-3-1 hook, Danger Zone diagnostic matrix, and tactical 5-step audit is open in the Artifact Workbench to your right.`,
+        citations: [
+          {
+            id: 'cit-balfour-pricing-1',
+            episodeNumber: 112,
+            episodeTitle: 'Brian Balfour on the Four Fits Framework and Why Growth Is a System',
+            guest: 'Brian Balfour',
+            guestRole: 'Founder & CEO of Reforge, Former VP Growth at HubSpot',
+            timestamp: '00:02:20',
+            quoteExcerpt: 'Low ARPU products require low CAC distribution channels like virality, user-generated content, or organic search. Conversely, high ARPU products ($100k+ annual contracts) can afford direct sales...',
+            episodeUrl: 'https://www.youtube.com/watch?v=BrianBalfourGrowth',
+            whyThisSource: 'Direct evidence from Brian Balfour on channel-model pricing laws.',
+          },
+        ],
+      },
+    ],
+  },
+  {
+    id: 'demo-b2b-saas-playbook',
+    title: 'B2B SaaS Retention Playbook',
+    createdAt: new Date(Date.now() - 3600000 * 5).toISOString(),
+    updatedAt: new Date(Date.now() - 3600000 * 5).toISOString(),
+    activeModelId: 'openai-cloud',
+    artifactIds: ['artifact-1'],
+    messages: [
+      {
+        id: 'm-b2b-1',
+        role: 'user',
+        content: 'Generate a comprehensive tactical playbook for B2B SaaS retention benchmarks and monetization loops.',
+        timestamp: '11:15',
+      },
+      {
+        id: 'm-b2b-2',
+        role: 'assistant',
+        timestamp: '11:16',
+        status: 'complete',
+        artifactId: 'artifact-1',
+        evidenceStrength: 'high',
+        evidenceLabel: '2 transcript sources · 2 speakers',
+        followUpSuggestions: [
+          'Compare Casey Winters and Brian Balfour on retention',
+          'How does this apply to PLG?',
+          'Turn this into a playbook',
+          'Write a Ship 30/30 essay',
+        ],
+        content: `I've generated a comprehensive Markdown playbook titled **"B2B SaaS Retention Playbook: Cohort Flattening & Natural Frequency"** grounded in transcript evidence from Casey Winters and Elena Verna.
+
+The operational framework, cohort benchmark tables, and 7-step checklist are open in the Artifact Workbench to your right.`,
+        citations: [
+          {
+            id: 'cit-b2b-playbook-1',
+            episodeNumber: 42,
+            episodeTitle: 'Casey Winters on Growth Loops, Retention, and Why Blended Metrics Lie',
+            guest: 'Casey Winters',
+            guestRole: 'Former CPO at Eventbrite, Growth Lead at Pinterest',
+            timestamp: '00:01:25',
+            quoteExcerpt: 'In B2B SaaS, your logo retention floor needs to be 70% or 80%, and your Net Revenue Retention (NRR) should be over 110% to 120% because existing accounts expand over time.',
+            episodeUrl: 'https://www.youtube.com/watch?v=WlRfyEpAKxw',
+            whyThisSource: 'Benchmark criteria for B2B SaaS logo retention and NRR.',
+          },
+          {
+            id: 'cit-b2b-playbook-2',
+            episodeNumber: 88,
+            episodeTitle: 'Elena Verna on PLG, B2B Retention Benchmarks, and Monetization Loops',
+            guest: 'Elena Verna',
+            guestRole: 'Head of Growth at Lovable, Former Interim CMO at Miro & Amplitude',
+            timestamp: '00:01:38',
+            quoteExcerpt: 'B2B growth loops must strictly align with the natural cadence of the organization. Trying to create daily habits for quarterly problems always creates churn.',
+            episodeUrl: 'https://www.youtube.com/watch?v=ElenaVernaPLG',
+            whyThisSource: 'Direct operational guidance on problem frequency alignment.',
+          },
+        ],
+      },
+    ],
+  },
+  {
+    id: 'demo-verna-plg',
+    title: 'Elena Verna — Product-Led Growth',
     createdAt: new Date(Date.now() - 3600000 * 26).toISOString(),
     updatedAt: new Date(Date.now() - 3600000 * 26).toISOString(),
     activeModelId: 'openai-cloud',
-    artifactIds: ['artifact-2'],
+    artifactIds: [],
     messages: [
       {
-        id: 'm2-1',
+        id: 'm-verna-1',
+        role: 'user',
+        content: 'What is the single biggest misconception about PLG according to Elena Verna?',
+        timestamp: 'Yesterday 14:00',
+      },
+      {
+        id: 'm-verna-2',
+        role: 'assistant',
+        timestamp: 'Yesterday 14:01',
+        status: 'complete',
+        evidenceStrength: 'high',
+        evidenceLabel: '2 transcript sources · 1 speaker',
+        followUpSuggestions: [
+          'Compare Elena Verna and Brian Balfour on PLG',
+          'What is the Time-to-Aha threshold for B2B activation?',
+          'Turn this into a playbook',
+          'Write a Ship 30/30 essay',
+        ],
+        content: `In Episode 88 of Lenny's Podcast, Elena Verna explains that the most destructive misconception is assuming Product-Led Growth is just a self-serve pricing page and a free trial.
+
+### 1. True PLG is an Organizational Distribution Model
+PLG means the product itself performs the heavy lifting of acquisition, retention, and expansion. If your product requires a human sales rep to explain why it is valuable before the user feels the value, you do not have a PLG motion.
+
+### 2. The 8-Minute Time-to-Aha Rule
+Elena highlights that in a true PLG motion, your **Time-to-Aha must be under 8 minutes**. If users cannot experience the core value proposition in their very first session without reading documentation, onboarding drop-off will routinely exceed 80%.
+
+### 3. Monetize Governance, Not Activation
+Never place a paywall before the user has formed a habit. Charge for organizational collaboration, security (SSO/SCIM), and administrative controls when multiple teams adopt the tool.`,
+        citations: [
+          {
+            id: 'cit-verna-plg-1',
+            episodeNumber: 88,
+            episodeTitle: 'Elena Verna on PLG, B2B Retention Benchmarks, and Monetization Loops',
+            guest: 'Elena Verna',
+            guestRole: 'Head of Growth at Lovable, Former Interim CMO at Miro & Amplitude',
+            timestamp: '00:00:45',
+            quoteExcerpt: 'The biggest mistake is assuming PLG is just a self-serve pricing page and a free trial. PLG is an organizational distribution model where the product itself does the heavy lifting of acquisition, retention, and expansion.',
+            episodeUrl: 'https://www.youtube.com/watch?v=ElenaVernaPLG',
+            whyThisSource: 'Direct statement on PLG organizational definition and Time-to-Aha.',
+          },
+          {
+            id: 'cit-verna-plg-2',
+            episodeNumber: 88,
+            episodeTitle: 'Elena Verna on PLG, B2B Retention Benchmarks, and Monetization Loops',
+            guest: 'Elena Verna',
+            guestRole: 'Head of Growth at Lovable, Former Interim CMO at Miro & Amplitude',
+            timestamp: '00:02:40',
+            quoteExcerpt: 'Never paywall activation. If you put a credit card wall or hard paywall before the user has validated that the product solves their problem, you destroy your conversion loop. You should monetize on scale and organizational governance...',
+            episodeUrl: 'https://www.youtube.com/watch?v=ElenaVernaPLG',
+            whyThisSource: 'Tactical guidance on monetization placement and paywall timing.',
+          },
+        ],
+      },
+    ],
+  },
+  {
+    id: 'demo-vohra-pmf',
+    title: 'Rahul Vohra — PMF Framework',
+    createdAt: new Date(Date.now() - 3600000 * 28).toISOString(),
+    updatedAt: new Date(Date.now() - 3600000 * 28).toISOString(),
+    activeModelId: 'openai-cloud',
+    artifactIds: [],
+    messages: [
+      {
+        id: 'm-vohra-1',
         role: 'user',
         content: 'How did Rahul Vohra operationalize the 40% PMF survey rule at Superhuman?',
         timestamp: 'Yesterday 11:05',
       },
       {
-        id: 'm2-2',
+        id: 'm-vohra-2',
         role: 'assistant',
         timestamp: 'Yesterday 11:06',
         status: 'complete',
-        artifactId: 'artifact-2',
-        content: `Rahul Vohra discussed this extensively on Lenny's Podcast. Rather than treating Sean Ellis's 40% rule as a passive lagging metric, Superhuman turned it into an active development engine.
+        evidenceStrength: 'high',
+        evidenceLabel: '2 transcript sources · 1 speaker',
+        followUpSuggestions: [
+          'Compare Rahul Vohra and Casey Winters on PMF signals',
+          'How do I filter the 40% PMF survey respondents?',
+          'Turn this into a playbook',
+          'Write a Ship 30/30 essay',
+        ],
+        content: `On Episode 15 of Lenny's Podcast, Rahul Vohra shared how Superhuman turned Sean Ellis's 40% survey question into an active product engine that systematically drove their PMF score from 22% to 58%:
 
-### Rahul Vohra's 4-Step Engine:
-1. **Segment the respondents:** Filter users by the question: *"How would you feel if you could no longer use Superhuman?"* (Very disappointed, Somewhat disappointed, Not disappointed).
-2. **Double down on your advocates:** Analyze the "Very disappointed" cohort to identify the exact archetype and ICP who loves the product today.
-3. **Filter the middle group:** Look at the "Somewhat disappointed" users, but *only* those who share the same primary benefit as your "Very disappointed" group.
-4. **Allocate roadmap 50/50:** Spend 50% of engineering bandwidth strengthening what your fans love, and 50% removing blockers for the on-the-fence users who share that profile.
-
-I also compiled an interactive PMF Calculator tool in the Artifact Viewer.`,
+### The 4-Step PMF Engine
+1. **Survey and Segment:** Ask: *'How would you feel if you could no longer use the product?'* (Very disappointed, Somewhat disappointed, Not disappointed).
+2. **Analyze Your High-Expectation Advocates:** Isolate the 'Very disappointed' group to identify the exact customer archetype who finds undeniable value.
+3. **Filter the Middle Cohort:** Look at the 'Somewhat disappointed' group, but **ONLY** those who share the same primary benefit as the 'Very disappointed' lovers. Politely ignore everyone else so you don't build a Frankenstein product.
+4. **The 50/50 Roadmap Allocation:** Dedicate half of your engineering roadmap to doubling down on what fans love, and the other half to systematically removing blockers for that specific target middle cohort.`,
         citations: [
           {
-            id: 'cit-3',
+            id: 'cit-vohra-pmf-1',
             episodeNumber: 15,
             episodeTitle: 'Rahul Vohra on The Product-Market Fit Engine and Building Superhuman',
             guest: 'Rahul Vohra',
             guestRole: 'Founder & CEO of Superhuman',
-            timestamp: '19:12',
-            quoteExcerpt: 'We surveyed our users and only 22% said they would be very disappointed. Instead of despairing, we created a systematic method to drive that number up to 58%.',
+            timestamp: '00:00:52',
+            quoteExcerpt: 'We surveyed our users and only 22% said they would be very disappointed if Superhuman disappeared. Instead of despairing, we created a systematic method to drive that number up to 58%.',
             episodeUrl: 'https://www.youtube.com/watch?v=ourIThGMpYE',
+            whyThisSource: 'Operational breakdown of the Superhuman 40% PMF engine.',
           },
-        ],
-      },
-    ],
-  },
-  {
-    id: 'session-3',
-    title: 'Web3 & Crypto Tokenomics Mechanics',
-    createdAt: new Date(Date.now() - 3600000 * 72).toISOString(),
-    updatedAt: new Date(Date.now() - 3600000 * 72).toISOString(),
-    activeModelId: 'openai-cloud',
-    artifactIds: [],
-    messages: [
-      {
-        id: 'm3-1',
-        role: 'user',
-        content: 'What does Lenny\'s Podcast recommend for designing token distribution schedules in web3 games?',
-        timestamp: '3 days ago',
-      },
-      {
-        id: 'm3-2',
-        role: 'assistant',
-        timestamp: '3 days ago',
-        status: 'low-evidence',
-        content: `I don't have enough grounded material on token distribution mechanics for web3 games in Lenny's Podcast to answer confidently.
-
-While Lenny has occasionally explored broader web3 narratives with guests like Chris Dixon and Packy McCormick, the podcast transcript archive focuses overwhelmingly on traditional software product management, SaaS growth loops, retention metrics, and consumer marketplace mechanics. It does not contain empirical guidance or tactical benchmarks on token distribution schedules or cryptocurrency liquidity mechanics.
-
-I cannot synthesize reliable operational guidance on this topic without fabricating claims beyond Lenny's podcast archives.`,
-      },
-    ],
-  },
-  {
-    id: 'session-4',
-    title: 'Growth Loops vs Funnels & Retention',
-    createdAt: new Date(Date.now() - 3600000 * 120).toISOString(),
-    updatedAt: new Date(Date.now() - 3600000 * 120).toISOString(),
-    activeModelId: 'openai-cloud',
-    artifactIds: [],
-    messages: [
-      {
-        id: 'm4-1',
-        role: 'user',
-        content: 'Why does Brian Balfour argue that traditional linear funnels are dead?',
-        timestamp: '5 days ago',
-      },
-      {
-        id: 'm4-2',
-        role: 'assistant',
-        timestamp: '5 days ago',
-        status: 'complete',
-        content: `Brian Balfour (Reforge Founder, former VP Growth at HubSpot) explained on the podcast that the traditional linear funnel (AARRR: Acquisition, Activation, Retention, Referral, Revenue) creates a fatal structural flaw: **it produces diminishing returns requiring ever-increasing inputs of capital or attention**.
-
-### Why Growth Loops Win:
-- **Reinvestment of Output:** In a loop, the output of one cohort serves as the acquisition input for the next cohort (e.g. viral loops, content loops, paid loops).
-- **Compounding instead of linear decay:** A linear funnel requires you to pour more leads into the top every month. A loop compounds with each cycle.
-- **Defensibility:** Competitors can easily copy a landing page or bid higher on Google keywords; they cannot easily copy a proprietary closed-loop system where product usage inherently generates new distribution.`,
-        citations: [
           {
-            id: 'cit-4',
-            episodeNumber: 112,
-            episodeTitle: 'Brian Balfour on Growth Loops, Retention Engines, and The Four Fits',
-            guest: 'Brian Balfour',
-            guestRole: 'Founder & CEO at Reforge, Former VP Growth at HubSpot',
-            timestamp: '11:45',
-            quoteExcerpt: 'Funnels create organizational silos and run into diminishing returns. The fastest growing products are powered by 1 to 2 compound loops where users going through the product inherently bring in more users.',
-            episodeUrl: 'https://www.youtube.com/watch?v=Mq_T3KVBR9E',
+            id: 'cit-vohra-pmf-2',
+            episodeNumber: 15,
+            episodeTitle: 'Rahul Vohra on The Product-Market Fit Engine and Building Superhuman',
+            guest: 'Rahul Vohra',
+            guestRole: 'Founder & CEO of Superhuman',
+            timestamp: '00:02:24',
+            quoteExcerpt: 'Because if you listen to everyone, you will build a Frankenstein product. Users who want completely different value propositions will pull your product in directions that dilute what makes it magical...',
+            episodeUrl: 'https://www.youtube.com/watch?v=ourIThGMpYE',
+            whyThisSource: 'Guidance on why feedback from non-ICP users must be filtered.',
           },
         ],
-      },
-    ],
-  },
-  {
-    id: 'session-5',
-    title: 'Local LLM Connection Troubleshooting',
-    createdAt: new Date(Date.now() - 3600000 * 240).toISOString(),
-    updatedAt: new Date(Date.now() - 3600000 * 240).toISOString(),
-    activeModelId: 'ollama-mistral',
-    artifactIds: [],
-    messages: [
-      {
-        id: 'm5-1',
-        role: 'user',
-        content: 'Can you summarize Gibson Biddle\'s DHM model using my local Ollama model?',
-        timestamp: '10 days ago',
-      },
-      {
-        id: 'm5-2',
-        role: 'assistant',
-        timestamp: '10 days ago',
-        status: 'error',
-        content: '',
-        errorDetails: {
-          message: "Couldn't reach the local model. Check that Ollama is running on localhost:11434, or switch to Cloud.",
-          canSwitchToCloud: true,
-        },
       },
     ],
   },

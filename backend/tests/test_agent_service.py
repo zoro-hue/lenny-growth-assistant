@@ -16,12 +16,13 @@ async def test_tools_execution_and_registry(test_db: AsyncSession):
 
     registry = ToolRegistry(test_db)
     schemas = registry.get_schemas()
-    assert len(schemas) == 4
+    assert len(schemas) == 5
     tool_names = [s["function"]["name"] for s in schemas]
     assert "search_lenny_transcripts" in tool_names
     assert "lookup_episode_source" in tool_names
     assert "generate_ship30_essay" in tool_names
     assert "generate_artifact" in tool_names
+    assert "compare_perspectives" in tool_names
 
     # Test search_lenny_transcripts execution
     search_tool = registry.get_tool("search_lenny_transcripts")

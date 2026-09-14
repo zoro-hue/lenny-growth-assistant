@@ -56,23 +56,26 @@ class RetrievalService:
             logger.info("Knowledge base is empty. Returning 0 retrieval results.")
             return []
 
-        # 2. Generate embedding for query
+        # 2. Extract targeted entities (speakers, episode number) from query
+        targets = cls.extract_query_targets(clean_query)
+
+        # 3. Generate embedding for query
         try:
             query_embedding = await EmbeddingService.embed_query(clean_query)
         except Exception as e:
             logger.error(f"Failed to generate embedding for query '{clean_query}': {e}", exc_info=True)
             return []
 
-        # 3. Perform vector retrieval
+        # 4. Perform vector retrieval with speaker/relevance-aware ranking
         results: List[SearchResultItem] = []
         try:
             bind = db.bind or getattr(db, "_bind", None)
             is_postgres = (bind.dialect.name == "postgresql") if bind else False
 
             if is_postgres:
-                results = await cls._search_postgres(db, query_embedding, k, threshold)
+                results = await cls._search_postgres(db, query_embedding, k, threshold, targets)
             else:
-                results = await cls._search_sqlite(db, query_embedding, k, threshold)
+                results = await cls._search_sqlite(db, query_embedding, k, threshold, targets)
 
         except Exception as ex:
             logger.error(f"Database query error during vector retrieval: {ex}", exc_info=True)
@@ -80,9 +83,41 @@ class RetrievalService:
 
         logger.info(
             f"Retrieved {len(results)} chunks for query '{clean_query[:50]}' "
-            f"(top_k={k}, threshold={threshold})"
+            f"(targets={targets}, top_k={k}, threshold={threshold})"
         )
         return results
+
+    @classmethod
+    def extract_query_targets(cls, query: str) -> Dict[str, Any]:
+        """Detects explicitly mentioned speakers and episode numbers in the query."""
+        import re
+
+        # Episode number matching: "episode 112", "#112", "ep. 42"
+        ep_num: Optional[int] = None
+        ep_match = re.search(r'(?:episode|ep\.?)\s*#?\s*(\d+)|#(\d+)', query, re.IGNORECASE)
+        if ep_match:
+            ep_num = int(ep_match.group(1) or ep_match.group(2))
+
+        # Known guests in Lenny's Podcast archives
+        known_guests = [
+            "Brian Balfour",
+            "Casey Winters",
+            "Elena Verna",
+            "Shreyas Doshi",
+            "Rahul Vohra",
+        ]
+        detected_speakers = []
+        q_lower = query.lower()
+        for guest in known_guests:
+            parts = guest.lower().split()
+            # Match full name or surname (if >= 4 letters)
+            if guest.lower() in q_lower or (len(parts) > 1 and parts[-1] in q_lower):
+                detected_speakers.append(guest)
+
+        return {
+            "episode_number": ep_num,
+            "speakers": detected_speakers,
+        }
 
     @classmethod
     async def _search_postgres(
@@ -91,31 +126,39 @@ class RetrievalService:
         query_embedding: List[float],
         top_k: int,
         threshold: float,
+        targets: Optional[Dict[str, Any]] = None,
     ) -> List[SearchResultItem]:
-        """Native PostgreSQL pgvector cosine distance search."""
+        """Native PostgreSQL pgvector cosine distance search with speaker-aware reranking."""
         distance_col = TranscriptChunkModel.embedding.cosine_distance(query_embedding).label("distance")
         stmt = (
             select(TranscriptChunkModel, distance_col)
             .options(selectinload(TranscriptChunkModel.transcript))
             .where(TranscriptChunkModel.embedding.isnot(None))
             .order_by(asc("distance"))
-            .limit(top_k * 2)  # fetch buffer to apply similarity threshold
+            .limit(top_k * 3)  # fetch broader candidate buffer for reranking
         )
         rows = (await db.execute(stmt)).all()
 
-        results: List[SearchResultItem] = []
+        target_speakers = [s.lower() for s in (targets.get("speakers") if targets else [])]
+        target_ep = targets.get("episode_number") if targets else None
+
+        candidates = []
         for chunk, dist in rows:
-            # Cosine distance = 1.0 - cosine_similarity (for unit vectors)
             similarity = round(1.0 - float(dist), 4)
             if similarity < threshold:
                 continue
 
-            item = cls._to_search_result(chunk, similarity)
-            results.append(item)
-            if len(results) >= top_k:
-                break
+            guest_lower = (chunk.guest or "").lower()
+            speaker_match = any(ts in guest_lower or guest_lower in ts for ts in target_speakers)
+            ep_match = (target_ep is not None and chunk.episode_number == target_ep)
 
-        return results
+            candidates.append((chunk, similarity, speaker_match, ep_match))
+
+        # Sort: priority to speaker_match, then episode_match, then similarity descending
+        candidates.sort(key=lambda x: (1 if x[2] else 0, 1 if x[3] else 0, x[1]), reverse=True)
+        top_scored = candidates[:top_k]
+
+        return [cls._to_search_result(c, sim, targets) for c, sim, _, _ in top_scored]
 
     @classmethod
     async def _search_sqlite(
@@ -124,8 +167,9 @@ class RetrievalService:
         query_embedding: List[float],
         top_k: int,
         threshold: float,
+        targets: Optional[Dict[str, Any]] = None,
     ) -> List[SearchResultItem]:
-        """In-memory cosine similarity search for SQLite local/test fallback."""
+        """In-memory cosine similarity search with speaker-aware reranking for SQLite."""
         stmt = (
             select(TranscriptChunkModel)
             .options(selectinload(TranscriptChunkModel.transcript))
@@ -133,22 +177,33 @@ class RetrievalService:
         )
         chunks = (await db.execute(stmt)).scalars().all()
 
-        scored_chunks = []
+        target_speakers = [s.lower() for s in (targets.get("speakers") if targets else [])]
+        target_ep = targets.get("episode_number") if targets else None
+
+        candidates = []
         for chunk in chunks:
             if chunk.embedding is not None:
                 sim = compute_cosine_similarity(query_embedding, list(chunk.embedding))
                 if sim >= threshold:
-                    scored_chunks.append((chunk, round(sim, 4)))
+                    guest_lower = (chunk.guest or "").lower()
+                    speaker_match = any(ts in guest_lower or guest_lower in ts for ts in target_speakers)
+                    ep_match = (target_ep is not None and chunk.episode_number == target_ep)
+                    candidates.append((chunk, round(sim, 4), speaker_match, ep_match))
 
-        # Sort descending by similarity
-        scored_chunks.sort(key=lambda x: x[1], reverse=True)
-        top_scored = scored_chunks[:top_k]
+        # Priority to speaker_match, then episode_match, then similarity descending
+        candidates.sort(key=lambda x: (1 if x[2] else 0, 1 if x[3] else 0, x[1]), reverse=True)
+        top_scored = candidates[:top_k]
 
-        return [cls._to_search_result(chunk, sim) for chunk, sim in top_scored]
+        return [cls._to_search_result(chunk, sim, targets) for chunk, sim, _, _ in top_scored]
 
     @classmethod
-    def _to_search_result(cls, chunk: TranscriptChunkModel, similarity: float) -> SearchResultItem:
-        """Constructs SearchResultItem and CitationSchema from chunk model."""
+    def _to_search_result(
+        cls,
+        chunk: TranscriptChunkModel,
+        similarity: float,
+        targets: Optional[Dict[str, Any]] = None,
+    ) -> SearchResultItem:
+        """Constructs SearchResultItem and CitationSchema with why_this_source from chunk model."""
         # Extract quote excerpt (first ~220 chars or up to sentence end)
         text = chunk.content.strip()
         lines = [line.strip() for line in text.split("\n") if line.strip() and not line.startswith("#")]
@@ -158,12 +213,28 @@ class RetrievalService:
         else:
             excerpt = content_sample
 
-        # Prefer audio_url (YouTube) over transcript_url (lennyspodcast.com may be down)
+        # Prefer audio_url (YouTube) over transcript_url
         episode_url = chunk.source_url or ""
         if hasattr(chunk, 'transcript') and chunk.transcript and chunk.transcript.audio_url:
             episode_url = chunk.transcript.audio_url
         if not episode_url:
             episode_url = "https://www.lennyspodcast.com"
+
+        # Generate contextual "Why this source?" explanation
+        target_speakers = targets.get("speakers", []) if targets else []
+        target_ep = targets.get("episode_number") if targets else None
+
+        guest_lower = (chunk.guest or "").lower()
+        is_speaker_target = any(ts.lower() in guest_lower or guest_lower in ts.lower() for ts in target_speakers)
+        is_ep_target = (target_ep is not None and chunk.episode_number == target_ep)
+
+        if is_speaker_target:
+            why_source = f"Direct evidence from {chunk.guest} supporting the core argument."
+        elif is_ep_target:
+            why_source = f"Relevant transcript evidence from Episode #{chunk.episode_number}."
+        else:
+            topic = chunk.episode_title.split("on ")[-1] if "on " in chunk.episode_title else chunk.episode_title
+            why_source = f"Relevant archive framework on {topic}."
 
         citation = CitationSchema(
             id=chunk.id,
@@ -175,6 +246,7 @@ class RetrievalService:
             quoteExcerpt=excerpt,
             episodeUrl=episode_url,
             relevanceScore=similarity,
+            whyThisSource=why_source,
         )
 
         return SearchResultItem(

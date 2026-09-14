@@ -66,6 +66,85 @@ class MessageService:
 
         time_str = message.created_at.strftime("%H:%M")
 
+        # Compute evidence strength indicator
+        evidence_strength = None
+        evidence_label = None
+        if message.role == "assistant":
+            if message.status == "low-evidence" or (not citations and message.status != "error"):
+                evidence_strength = "not-grounded"
+                evidence_label = "No supporting Lenny Podcast evidence found"
+            elif len(citations) == 1:
+                evidence_strength = "limited"
+                evidence_label = "1 relevant transcript source"
+            elif len(citations) >= 2:
+                unique_speakers = len(set(c.guest for c in citations if c.guest))
+                speaker_str = f"{unique_speakers} speakers" if unique_speakers > 1 else "1 speaker"
+                evidence_strength = "high"
+                evidence_label = f"{len(citations)} transcript sources · {speaker_str}"
+
+        # Contextual deterministic follow-up suggestions
+        follow_up_suggestions = []
+        if message.role == "assistant" and message.status == "complete":
+            primary_guests = [c.guest.lower() for c in citations if c.guest]
+            content_lower = message.content.lower()
+
+            if any("balfour" in g for g in primary_guests) or "balfour" in content_lower:
+                follow_up_suggestions = [
+                    "Compare Brian Balfour and Elena Verna on growth loops",
+                    "What metric should I track for Channel-Model Fit?",
+                    "Turn this into a playbook",
+                    "Write a Ship 30/30 essay",
+                ]
+            elif any("winters" in g for g in primary_guests) or "winters" in content_lower:
+                follow_up_suggestions = [
+                    "Compare Casey Winters and Brian Balfour on retention",
+                    "How does this apply to PLG?",
+                    "Turn this into a playbook",
+                    "Write a Ship 30/30 essay",
+                ]
+            elif any("verna" in g for g in primary_guests) or "verna" in content_lower:
+                follow_up_suggestions = [
+                    "Compare Elena Verna and Brian Balfour on PLG",
+                    "What is the Time-to-Aha threshold for B2B activation?",
+                    "Turn this into a playbook",
+                    "Write a Ship 30/30 essay",
+                ]
+            elif any("vohra" in g for g in primary_guests) or "vohra" in content_lower:
+                follow_up_suggestions = [
+                    "Compare Rahul Vohra and Casey Winters on PMF signals",
+                    "How do I filter the 40% PMF survey respondents?",
+                    "Turn this into a playbook",
+                    "Write a Ship 30/30 essay",
+                ]
+            elif any("doshi" in g for g in primary_guests) or "doshi" in content_lower:
+                follow_up_suggestions = [
+                    "Compare Shreyas Doshi and Brian Balfour on high agency",
+                    "How does the LNO framework apply to roadmap decisions?",
+                    "Turn this into a playbook",
+                    "Write a Ship 30/30 essay",
+                ]
+            elif "compare perspectives" in content_lower:
+                follow_up_suggestions = [
+                    "What metric should I track?",
+                    "How does this apply to PLG?",
+                    "Turn this into a playbook",
+                    "Write a Ship 30/30 essay",
+                ]
+            elif message.artifact_id:
+                follow_up_suggestions = [
+                    "How do I implement this framework step-by-step?",
+                    "What metric should I track?",
+                    "Compare this with Elena Verna's view",
+                    "Write a Ship 30/30 essay",
+                ]
+            else:
+                follow_up_suggestions = [
+                    "How does this apply to PLG?",
+                    "What metric should I track?",
+                    "Compare this with Elena Verna's view",
+                    "Turn this into a playbook",
+                ]
+
         return MessageResponse(
             id=message.id,
             role=message.role,
@@ -76,4 +155,7 @@ class MessageService:
             citations=citations,
             artifactId=message.artifact_id,
             errorDetails=message.error_details,
+            evidenceStrength=evidence_strength,
+            evidenceLabel=evidence_label,
+            followUpSuggestions=follow_up_suggestions,
         )

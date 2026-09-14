@@ -116,3 +116,14 @@ async def add_session_message(
     """Add a message to a session's conversation history."""
     message = await MessageService.create_message(db, session_id, data)
     return MessageService.to_response(message)
+
+
+@router.post("/seed-demo", status_code=status.HTTP_200_OK)
+async def seed_demo_endpoint(
+    reset: bool = True,
+    db: AsyncSession = Depends(get_db),
+):
+    """Seed clean, professional demo conversations into the session history."""
+    from ..scripts.seed_demo import seed_demo_conversations
+    result = await seed_demo_conversations(db, reset=reset)
+    return result

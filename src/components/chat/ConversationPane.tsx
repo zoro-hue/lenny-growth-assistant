@@ -43,6 +43,11 @@ export const ConversationPane: React.FC<ConversationPaneProps> = ({
           loadingStage={loadingStage}
           onOpenArtifact={onOpenArtifact}
           onSwitchToCloud={onSwitchToCloud}
+          onSelectSuggestion={(suggestion) => {
+            const lower = suggestion.toLowerCase();
+            const isEssay = lower.includes('essay') || lower.includes('ship 30');
+            onSendMessage(suggestion, isEssay);
+          }}
         />
       )}
 

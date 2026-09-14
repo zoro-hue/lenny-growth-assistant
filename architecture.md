@@ -152,4 +152,45 @@ Treats all LLM-generated HTML as untrusted content:
 3. **Server-Side Sanitization**: `ArtifactGeneratorTool._sanitize_html` strips `<script>` tags, dangerous event handlers (`onload`, `onerror`, `onclick`), `javascript:` URIs, and top-level target hijackers (`<base target="_top">`).
 4. **Content Security Policy (CSP)**: Standalone HTML embeds an inline CSP `<meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'unsafe-inline'; img-src data: https:; font-src data:; form-action 'none'; frame-ancestors 'none';">` to block outbound network exfiltration.
 
+---
+
+## 7. Evaluator-Ready Product Upgrades
+
+### Upgrade 1: Speaker-Aware & Relevance-Aware Citations
+- **Speaker & Episode Target Extraction**: `RetrievalService.extract_query_targets` parses guest names (Brian Balfour, Elena Verna, Casey Winters, Rahul Vohra, Shreyas Doshi) and episode numbers from queries.
+- **Rank Prioritization**: When an explicit speaker is named, chunks matching that speaker are boosted to the top of citations without discarding other relevant corroborating speakers.
+- **Qualitative Evidence-Strength Indicator**: Instead of fabricated percentage scores, answers display subtle qualitative badges:
+  - `HIGH EVIDENCE`: $\ge 2$ sources and $\ge 2$ speakers.
+  - `LIMITED EVIDENCE`: 1 relevant source or limited single-speaker reference.
+  - `NOT GROUNDED`: 0 supporting sources or low-evidence status.
+- **Why This Source**: Contextual explanation synthesized from query intent, speaker match, and retrieval score.
+
+### Upgrade 2: Professional Demo Conversation History
+- **Clean Demo Seed Mechanism**: `backend/app/scripts/seed_demo.py` populates 6 curated research conversations:
+  - *Today*: Brian Balfour — Channel Model Fit, Retention Curves — What Actually Matters, Ship 30/30 — Pricing Strategy, B2B SaaS Retention Playbook
+  - *Yesterday*: Elena Verna — Product-Led Growth, Rahul Vohra — PMF Framework
+- **Execution**: Run `python -m backend.app.scripts.seed_demo --reset` or trigger `POST /api/sessions/seed-demo?reset=true` to restore a pristine demo environment without hardcoding fake production data.
+
+### Upgrade 3: Source Explorer
+- **Focused Inspection Experience**: Clicking an expanded citation opens an elegant Source Explorer with:
+  - `SOURCE` badge
+  - Guest and episode header (`Episode #112 · Brian Balfour`)
+  - Timestamp indicator (`00:01:28`)
+  - Verified transcript quote
+  - Contextual *"Why this source?"* explanation
+  - Authentic episode deep link
+
+### Upgrade 4: Compare Perspectives Engine (`compare_perspectives`)
+- **Native Dual-Perspective Retrieval**: `ComparePerspectivesTool` retrieves evidence for two named guests or topics without hallucination.
+- **Structured Synthesis**: Outputs:
+  - Core idea, growth mechanism, and relevant evidence for Speaker A
+  - Core idea, growth mechanism, and relevant evidence for Speaker B
+  - Synthesis (Agreements, Differences, and Practical Implications)
+- **Zero Fabrication**: If evidence for one speaker is missing from archives, explicitly flags `insufficient_evidence` instead of fabricating positions.
+
+### Upgrade 5: Contextual Follow-Up Suggestions
+- **Deterministic Action Suggestions**: Generated directly from response topics and speaker metadata (no extra LLM overhead).
+- **Direct Chat Routing**: Clicking an action sends the query into the chat loop, seamlessly invoking Compare Perspectives, Ship 30 essays, or playbook artifact generation.
+
+
 

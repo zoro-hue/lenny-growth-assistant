@@ -19,6 +19,7 @@ export interface Citation {
   quoteExcerpt: string;
   episodeUrl: string;
   relevanceScore?: number;
+  whyThisSource?: string;
 }
 
 export type MessageStatus = 'streaming' | 'complete' | 'low-evidence' | 'error';
@@ -35,6 +36,9 @@ export interface Message {
     message: string;
     canSwitchToCloud?: boolean;
   };
+  evidenceStrength?: 'high' | 'limited' | 'not-grounded';
+  evidenceLabel?: string;
+  followUpSuggestions?: string[];
 }
 
 export type SessionGroupType = 'Today' | 'Yesterday' | 'Previous 7 days' | 'Older';

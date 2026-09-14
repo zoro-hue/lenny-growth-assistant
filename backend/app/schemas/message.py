@@ -15,6 +15,7 @@ class CitationSchema(BaseModel):
     quote_excerpt: str = Field(alias="quoteExcerpt")
     episode_url: str = Field(alias="episodeUrl")
     relevance_score: Optional[float] = Field(default=None, alias="relevanceScore")
+    why_this_source: Optional[str] = Field(default=None, alias="whyThisSource")
 
 
 class MessageCreate(BaseModel):
@@ -53,3 +54,6 @@ class MessageResponse(BaseModel):
     citations: List[CitationSchema] = Field(default_factory=list)
     artifact_id: Optional[str] = Field(default=None, alias="artifactId")
     error_details: Optional[Dict[str, Any]] = Field(default=None, alias="errorDetails")
+    evidence_strength: Optional[str] = Field(default=None, alias="evidenceStrength")
+    evidence_label: Optional[str] = Field(default=None, alias="evidenceLabel")
+    follow_up_suggestions: Optional[List[str]] = Field(default_factory=list, alias="followUpSuggestions")

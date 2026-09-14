@@ -300,6 +300,25 @@ class MockAgentProvider(BaseLLMProvider):
                     "name": "generate_ship30_essay",
                     "arguments": {"topic": last_user},
                 }]
+            elif "compare" in lower_user and "compare_perspectives" in tool_names:
+                known = ["Brian Balfour", "Elena Verna", "Casey Winters", "Shreyas Doshi", "Rahul Vohra"]
+                found_speakers = [g for g in known if g.lower() in lower_user or g.split()[-1].lower() in lower_user]
+                spk_a = found_speakers[0] if len(found_speakers) > 0 else "Brian Balfour"
+                spk_b = found_speakers[1] if len(found_speakers) > 1 else "Elena Verna"
+                topic_match = last_user
+                if " on " in lower_user:
+                    topic_match = last_user.split(" on ")[-1].strip()
+                elif " about " in lower_user:
+                    topic_match = last_user.split(" about ")[-1].strip()
+                return "", [{
+                    "id": "mock_call_compare",
+                    "name": "compare_perspectives",
+                    "arguments": {
+                        "speaker_a": spk_a,
+                        "speaker_b": spk_b,
+                        "topic": topic_match,
+                    },
+                }]
             return "", [{
                 "id": "mock_call_search",
                 "name": "search_lenny_transcripts",
@@ -313,6 +332,8 @@ class MockAgentProvider(BaseLLMProvider):
         last_tool_msg = next((m.get("content", "") for m in reversed(messages) if m.get("role") == "tool"), "")
         try:
             tool_data = json.loads(last_tool_msg) if last_tool_msg else {}
+            if "status" in tool_data and "speaker_a" in tool_data and "content" in tool_data:
+                return tool_data["content"], []
             if "content" in tool_data and "word_count" in tool_data:
                 return tool_data["content"], []
             results = tool_data.get("results", [])

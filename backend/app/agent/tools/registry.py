@@ -7,6 +7,7 @@ from .transcript_search import TranscriptSearchTool
 from .source_lookup import SourceLookupTool
 from .ship30_essay import Ship30EssayTool
 from .artifact_generator import ArtifactGeneratorTool
+from .compare_perspectives import ComparePerspectivesTool
 
 logger = logging.getLogger(__name__)
 
@@ -23,11 +24,13 @@ class ToolRegistry:
         self.lookup_tool = SourceLookupTool(db)
         self.ship30_tool = Ship30EssayTool(db)
         self.artifact_tool = ArtifactGeneratorTool(db)
+        self.compare_tool = ComparePerspectivesTool(db)
         self._tools: Dict[str, BaseAgentTool] = {
             self.search_tool.name: self.search_tool,
             self.lookup_tool.name: self.lookup_tool,
             self.ship30_tool.name: self.ship30_tool,
             self.artifact_tool.name: self.artifact_tool,
+            self.compare_tool.name: self.compare_tool,
         }
 
     def get_tool(self, name: str) -> Optional[BaseAgentTool]:

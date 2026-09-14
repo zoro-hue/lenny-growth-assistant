@@ -2,7 +2,7 @@
 
 > A grounded research and operational assistant for product and growth leaders, powered by Lenny's Podcast transcripts with full source traceability, autonomous Pi Coding Agent reasoning, multi-provider inference (OpenAI + Local Ollama), and an editorial frontend interface.
 
-[![Backend Tests](https://img.shields.io/badge/pytest-59%20passed%20(100%25)-2ea44f.svg)](#running-tests)
+[![Backend Tests](https://img.shields.io/badge/pytest-69%20passed%20(100%25)-2ea44f.svg)](#running-tests)
 [![Build Status](https://img.shields.io/badge/frontend-clean%20build-success.svg)](#frontend-setup)
 [![License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 
@@ -10,22 +10,29 @@
 
 ## 🌟 Key Capabilities
 
-1. **Zero-Fabrication Grounded RAG**:
-   - Every growth framework and tactic links to verified episode transcripts with guest names, timestamps, and verbatim quotes.
-   - Transparent **"Insufficient Grounded Evidence in Archives"** low-evidence badge when queries are outside Lenny's podcast domain (e.g. crypto tokenomics, unrelated trivia).
-2. **Dual-Model Multi-Provider Architecture**:
+1. **Speaker-Aware & Zero-Fabrication RAG**:
+   - Explicit speaker mentions (e.g. Brian Balfour, Elena Verna) prioritize matching transcript chunks while preserving corroborating evidence.
+   - Qualitative **evidence-strength indicators** (`HIGH EVIDENCE`, `LIMITED EVIDENCE`, `NOT GROUNDED`) without fabricated percentage scores.
+   - **Focused Source Explorer** displaying speaker, episode, timestamp, verified quote, and contextual *"Why this source?"* explanation.
+2. **Dual-Speaker Perspective Comparison (`compare_perspectives`)**:
+   - Compare contrasting frameworks (e.g. Brian Balfour vs Elena Verna on growth loops) with structured points of agreement, divergence, and operational synthesis backed by authentic transcript evidence.
+3. **Contextual Action Follow-Ups ("Explore this further")**:
+   - Dynamic, deterministic follow-up chips routing directly to normal chat flow, Compare Perspectives, Ship 30 essays, or playbook artifact generation.
+4. **Professional Demo Seed Environment**:
+   - Single-command seed/reset mechanism populating 6 curated growth research conversations (`Today` and `Yesterday`) without fake production data.
+5. **Dual-Model Multi-Provider Architecture**:
    - Cloud frontier model: **OpenAI GPT-4o mini**.
    - Offline, privacy-first local model: **Ollama `llama3.2:3b`**.
    - Interactive model switcher with dynamic reachability detection and fallback handling.
-3. **Autonomous Pi Coding Agent Framework**:
+6. **Autonomous Pi Coding Agent Framework**:
    - Powered by `@earendil-works/pi-coding-agent` subprocess RPC with bidirectional tool calling.
-   - Dedicated tools: `search_lenny_transcripts`, `lookup_episode_source`, `generate_ship30_essay`, `generate_artifact`.
-4. **Ship 30 for 30 Writing Skill**:
+   - Dedicated tools: `search_lenny_transcripts`, `lookup_episode_source`, `compare_perspectives`, `generate_ship30_essay`, `generate_artifact`.
+7. **Ship 30 for 30 Writing Skill**:
    - Produces structured 1,250+ word operational essays complete with a viral hook, 2-3 core frameworks, skimmable bullet points, and actionable takeaways.
-5. **Interactive Artifact Workbench & Safe Viewer**:
+8. **Interactive Artifact Workbench & Safe Viewer**:
    - Side-by-side workbench for Markdown playbooks and full HTML/CSS calculators/dashboards.
    - Untrusted HTML rendered inside an isolated `<iframe>` with strict sandbox and CSP protections.
-6. **Editorial Workstation Ergonomics**:
+9. **Editorial Workstation Ergonomics**:
    - Responsive 3-pane layout with a **collapsible left sidebar** (240px to 56px icon rail).
    - Full conversation lifecycle: **inline renaming** and **safe deletion with confirmation**.
    - Keyboard shortcuts (`⌘N` New Chat, `⌘B` Toggle Sidebar, `⌘.` Toggle Workbench, `⌘M` Model Switcher).
@@ -99,9 +106,14 @@ Run database migrations:
 alembic upgrade head
 ```
 
-Ingest curated sample transcripts (Casey Winters, Elena Verna, Brian Balfour, Shreyas Doshi):
+Ingest curated sample transcripts (Casey Winters, Elena Verna, Brian Balfour, Shreyas Doshi, Rahul Vohra):
 ```bash
 python run_ingest.py --sample
+```
+
+Seed professional research demo conversations (6 curated sessions):
+```bash
+python -m backend.app.scripts.seed_demo --reset
 ```
 
 Start the backend server:
@@ -140,7 +152,7 @@ Copy `.env.example` to `.env`. Key options:
 
 ## 🧪 Verification & Test Suite
 
-The system includes **59 comprehensive backend tests** covering the full agent lifecycle, grounding assertions, and live Ollama execution:
+The system includes **69 comprehensive backend tests** covering the full agent lifecycle, grounding assertions, and live Ollama execution:
 
 ```bash
 # Run backend tests
@@ -148,8 +160,12 @@ python -m pytest backend/tests -v
 ```
 
 **Test Coverage Summary**:
+- **Speaker-Aware Ranking & Evidence Indicators**: Speaker and episode entity detection, ranking boost without exclusion, qualitative evidence strength labels (`test_speaker_aware_citations.py`)
+- **Compare Perspectives**: Dual-speaker grounding, missing evidence handling, zero fabrication (`test_compare_perspectives.py`)
+- **Contextual Follow-Up Suggestions**: Deterministic suggestion routing to Compare, Ship 30, and Playbooks (`test_follow_up_suggestions.py`)
+- **Demo Seed Persistence**: Seed script execution, idempotent updates, and API endpoint verification (`test_demo_seed.py`)
 - **Agent Multi-Provider**: Cloud key handling, Ollama offline handling, fallback state machine (`test_agent_providers.py`)
-- **Pi Coding Agent Loop**: Tool registry, chunk accumulation, and zero citation fabrication (`test_agent_service.py`, `test_pi_agent_service.py`)
+- **Pi Coding Agent Loop**: Tool registry (5 registered tools), chunk accumulation, and zero citation fabrication (`test_agent_service.py`, `test_pi_agent_service.py`)
 - **Ship 30 for 30 Skill**: Essay structure, word count compliance, and citation propagation (`test_ship30_skill.py`)
 - **Artifact Generator**: Markdown & HTML generation, sanitization, sandboxed viewing (`test_artifact_generation.py`)
 - **Real Ollama Execution**: Live tool-calling and out-of-domain rejection against local Ollama (`test_real_ollama.py`)

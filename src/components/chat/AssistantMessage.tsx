@@ -13,6 +13,7 @@ interface AssistantMessageProps {
   artifacts?: Record<string, Artifact>;
   onOpenArtifact?: (artifactId: string) => void;
   onSwitchToCloud?: () => void;
+  onSelectSuggestion?: (suggestion: string) => void;
 }
 
 export const AssistantMessage: React.FC<AssistantMessageProps> = ({
@@ -20,6 +21,7 @@ export const AssistantMessage: React.FC<AssistantMessageProps> = ({
   artifacts = {},
   onOpenArtifact,
   onSwitchToCloud,
+  onSelectSuggestion,
 }) => {
   const isStreaming = message.status === 'streaming';
   const isLowEvidence = message.status === 'low-evidence';
@@ -55,14 +57,50 @@ export const AssistantMessage: React.FC<AssistantMessageProps> = ({
     );
   }
 
+  // Evidence confidence evaluation
+  const citations = message.citations || [];
+  const evidenceType: 'high' | 'limited' | 'not-grounded' =
+    isLowEvidence || message.evidenceStrength === 'not-grounded'
+      ? 'not-grounded'
+      : message.evidenceStrength === 'limited' || citations.length === 1
+      ? 'limited'
+      : 'high';
+
+  const defaultEvidenceLabel =
+    evidenceType === 'not-grounded'
+      ? 'No supporting Lenny Podcast evidence found'
+      : citations.length >= 2
+      ? `${citations.length} transcript sources · ${new Set(citations.map(c => c.guest)).size} speakers`
+      : '1 relevant transcript source';
+
+  const evidenceLabel = message.evidenceLabel || defaultEvidenceLabel;
+
+  // Contextual follow-up suggestions
+  const suggestions =
+    message.followUpSuggestions && message.followUpSuggestions.length > 0
+      ? message.followUpSuggestions
+      : !isLowEvidence && !isError && !isStreaming
+      ? [
+          'Compare Brian Balfour and Elena Verna on growth loops',
+          'What metric should I track?',
+          'Turn this into a playbook',
+          'Write a Ship 30/30 essay',
+        ]
+      : [];
+
   return (
     <div
       className={`my-6 max-w-[680px] transition-all duration-base ${
         isLowEvidence ? 'border-l-2 border-signal-amber-600 pl-4 py-1' : ''
       }`}
     >
-      {/* Evidence confidence badge for low-evidence state */}
-      {isLowEvidence && <EvidenceConfidenceBadge />}
+      {/* Evidence confidence badge (NOT GROUNDED for low evidence, or HIGH/LIMITED above citations) */}
+      {isLowEvidence && (
+        <EvidenceConfidenceBadge
+          type="not-grounded"
+          label={evidenceLabel}
+        />
+      )}
 
       {/* Message body in Source Serif 4 */}
       <div className="font-serif text-[17px] leading-[1.75] text-ink-950">
@@ -131,9 +169,39 @@ export const AssistantMessage: React.FC<AssistantMessageProps> = ({
         <ArtifactGeneratedCard artifact={artifact} onOpen={onOpenArtifact} />
       )}
 
-      {/* Citations List (Structural proof-of-grounding, only when complete and citations exist) */}
-      {!isLowEvidence && message.citations && message.citations.length > 0 && (
-        <CitationList citations={message.citations} />
+      {/* Citations List with Evidence Strength Indicator */}
+      {!isLowEvidence && citations.length > 0 && (
+        <div className="mt-4 pt-3 border-t border-line-200">
+          <div className="mb-2">
+            <EvidenceConfidenceBadge
+              type={evidenceType}
+              label={evidenceLabel}
+            />
+          </div>
+          <CitationList citations={citations} />
+        </div>
+      )}
+
+      {/* Contextual Follow-up Suggestions ("Explore this further") */}
+      {!isStreaming && !isError && suggestions.length > 0 && (
+        <div className="mt-5 pt-3 border-t border-line-200/60">
+          <div className="text-[11px] font-sans font-semibold text-ink-500 uppercase tracking-wider mb-2 select-none">
+            Explore this further
+          </div>
+          <div className="flex flex-wrap gap-2">
+            {suggestions.map((suggestion, idx) => (
+              <button
+                key={idx}
+                type="button"
+                onClick={() => onSelectSuggestion?.(suggestion)}
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded bg-paper-100 hover:bg-paper-200/90 border border-line-200 text-xs font-sans text-ink-900 transition-colors duration-fast text-left shadow-xs focus-visible:outline-evidence-600"
+              >
+                <span className="text-evidence-600 font-bold text-xs">→</span>
+                <span>{suggestion}</span>
+              </button>
+            ))}
+          </div>
+        </div>
       )}
     </div>
   );
