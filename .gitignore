@@ -1,0 +1,43 @@
+# Dependency directories
+node_modules/
+backend/__pycache__/
+backend/**/__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Environment files & Secrets
+.env
+backend/.env
+*.env.local
+
+# Database files
+*.db
+*.sqlite
+*.sqlite3
+lenny_growth.db
+backend/lenny_growth.db
+
+# Build artifacts
+dist/
+build/
+.vite/
+
+# Testing & Cache
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Logs
+*.log
+logs/
+.system_generated/
+
+# OS and Editor
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+
+# Large temporary binaries / word docs
+*.docx

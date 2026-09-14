@@ -1,0 +1,63 @@
+version: '3.8'
+
+services:
+  # 1. PostgreSQL 16 with pgvector extension
+  db:
+    image: pgvector/pgvector:pg16
+    container_name: lenny-growth-db
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: lenny_growth
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgvector_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+  # 2. FastAPI Backend Service
+  backend:
+    build:
+      context: .
+      dockerfile: backend/Dockerfile
+    container_name: lenny-growth-backend
+    ports:
+      - "8000:8000"
+    environment:
+      - APP_ENV=production
+      - DATABASE_URL=postgresql+asyncpg://postgres:postgres@db:5432/lenny_growth
+      - DATABASE_SYNC_URL=postgresql://postgres:postgres@db:5432/lenny_growth
+      - SQLITE_FALLBACK_URL=sqlite+aiosqlite:///./lenny_growth.db
+      - EMBEDDING_PROVIDER=mock
+      - OLLAMA_BASE_URL=http://host.docker.internal:11434
+      - OLLAMA_MODEL=llama3.2:3b
+      - MODEL_FALLBACK_ENABLED=true
+      - AGENT_FRAMEWORK=pi_coding_agent
+      - ACTIVE_AGENT_FRAMEWORK=pi_coding_agent
+      - CORS_ORIGINS=http://localhost:3000,http://127.0.0.1:3000
+    depends_on:
+      db:
+        condition: service_healthy
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    restart: unless-stopped
+
+  # 3. Editorial React Frontend
+  frontend:
+    build:
+      context: .
+      dockerfile: Dockerfile.frontend
+    container_name: lenny-growth-frontend
+    ports:
+      - "3000:80"
+    depends_on:
+      - backend
+    restart: unless-stopped
+
+volumes:
+  pgvector_data:

@@ -1,0 +1,72 @@
+from logging.config import fileConfig
+import os
+import sys
+
+from sqlalchemy import engine_from_config
+from sqlalchemy import pool
+
+from alembic import context
+
+# Append current dir to sys.path
+sys.path.insert(0, os.path.dirname(os.path.dirname(__file__)))
+
+from app.config import settings
+from app.models.base import Base
+# Import all models to ensure metadata is populated
+from app.models import (
+    user_metadata,
+    session,
+    message,
+    artifact,
+    transcript,
+)  # noqa: F401
+
+config = context.config
+
+if config.config_file_name is not None:
+    fileConfig(config.config_file_name)
+
+target_metadata = Base.metadata
+
+sync_db_url = settings.database_sync_url
+if sync_db_url.startswith("postgresql+asyncpg://"):
+    sync_db_url = sync_db_url.replace("postgresql+asyncpg://", "postgresql://")
+elif sync_db_url.startswith("sqlite+aiosqlite://"):
+    sync_db_url = sync_db_url.replace("sqlite+aiosqlite://", "sqlite://")
+
+config.set_main_option("sqlalchemy.url", sync_db_url)
+
+
+def run_migrations_offline() -> None:
+    url = config.get_main_option("sqlalchemy.url")
+    context.configure(
+        url=url,
+        target_metadata=target_metadata,
+        literal_binds=True,
+        dialect_opts={"paramstyle": "named"},
+    )
+
+    with context.begin_transaction():
+        context.run_migrations()
+
+
+def run_migrations_online() -> None:
+    connectable = engine_from_config(
+        config.get_section(config.config_ini_section, {}),
+        prefix="sqlalchemy.",
+        poolclass=pool.NullPool,
+    )
+
+    with connectable.connect() as connection:
+        context.configure(
+            connection=connection, target_metadata=target_metadata
+        )
+
+        with context.begin_transaction():
+            context.run_migrations()
+
+
+if context.is_offline_mode():
+    run_migrations_offline()
+else:
+    run_migrations_online()
