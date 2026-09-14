@@ -35,6 +35,7 @@ export interface Message {
   errorDetails?: {
     message: string;
     canSwitchToCloud?: boolean;
+    canSwitchToLocal?: boolean;
   };
   evidenceStrength?: 'high' | 'limited' | 'not-grounded';
   evidenceLabel?: string;

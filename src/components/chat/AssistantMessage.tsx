@@ -13,6 +13,7 @@ interface AssistantMessageProps {
   artifacts?: Record<string, Artifact>;
   onOpenArtifact?: (artifactId: string) => void;
   onSwitchToCloud?: () => void;
+  onSwitchToLocal?: () => void;
   onSelectSuggestion?: (suggestion: string) => void;
 }
 
@@ -21,6 +22,7 @@ export const AssistantMessage: React.FC<AssistantMessageProps> = ({
   artifacts = {},
   onOpenArtifact,
   onSwitchToCloud,
+  onSwitchToLocal,
   onSelectSuggestion,
 }) => {
   const isStreaming = message.status === 'streaming';
@@ -39,18 +41,30 @@ export const AssistantMessage: React.FC<AssistantMessageProps> = ({
             </h4>
             <p className="font-sans text-sm text-ink-950 mb-3">
               {message.errorDetails?.message ||
-                "Couldn't reach the local model. Check that Ollama is running on localhost:11434, or switch to Cloud."}
+                "Couldn't reach the model provider. Check connection settings or switch models."}
             </p>
-            {message.errorDetails?.canSwitchToCloud && onSwitchToCloud && (
-              <button
-                type="button"
-                onClick={onSwitchToCloud}
-                className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-paper-0 border border-line-300 rounded text-xs font-sans font-medium text-ink-950 hover:bg-paper-100 transition-colors duration-fast focus-visible:outline-evidence-600 shadow-sm"
-              >
-                <span>Switch to Cloud (OpenAI GPT-4o mini)</span>
-                <ArrowRight className="w-3.5 h-3.5 text-evidence-600" />
-              </button>
-            )}
+            <div className="flex flex-wrap items-center gap-2">
+              {message.errorDetails?.canSwitchToCloud && onSwitchToCloud && (
+                <button
+                  type="button"
+                  onClick={onSwitchToCloud}
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-paper-0 border border-line-300 rounded text-xs font-sans font-medium text-ink-950 hover:bg-paper-100 transition-colors duration-fast focus-visible:outline-evidence-600 shadow-sm"
+                >
+                  <span>Switch to Cloud (OpenAI GPT-4o mini)</span>
+                  <ArrowRight className="w-3.5 h-3.5 text-evidence-600" />
+                </button>
+              )}
+              {message.errorDetails?.canSwitchToLocal && onSwitchToLocal && (
+                <button
+                  type="button"
+                  onClick={onSwitchToLocal}
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-paper-0 border border-line-300 rounded text-xs font-sans font-medium text-ink-950 hover:bg-paper-100 transition-colors duration-fast focus-visible:outline-evidence-600 shadow-sm"
+                >
+                  <span>Switch to Local Model (Ollama Llama 3.2 3B)</span>
+                  <ArrowRight className="w-3.5 h-3.5 text-evidence-600" />
+                </button>
+              )}
+            </div>
           </div>
         </div>
       </div>

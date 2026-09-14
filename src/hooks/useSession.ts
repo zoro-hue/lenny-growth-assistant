@@ -5,7 +5,13 @@ import { api } from '../services/api';
 
 export function useSession() {
   const [sessions, setSessions] = useState<Session[]>(MOCK_SESSIONS);
-  const [activeSessionId, setActiveSessionId] = useState<string>(MOCK_SESSIONS[0].id);
+  const [activeSessionId, setActiveSessionId] = useState<string>(() => {
+    try {
+      const saved = localStorage.getItem('lenny_active_session_id');
+      if (saved) return saved;
+    } catch {}
+    return MOCK_SESSIONS[0].id;
+  });
 
   // Sync with backend API if online
   useEffect(() => {
@@ -16,14 +22,30 @@ export function useSession() {
 
       const remoteSessions = await api.fetchSessions();
       if (remoteSessions && remoteSessions.length > 0 && isMounted) {
-        // Fetch details for active session
-        const activeRemote = await api.fetchSessionDetail(remoteSessions[0].id);
-        if (activeRemote) {
-          remoteSessions[0].messages = activeRemote.messages;
-          remoteSessions[0].artifactIds = activeRemote.artifacts.map(a => a.id);
-        }
-        setSessions(remoteSessions);
-        setActiveSessionId(remoteSessions[0].id);
+        // Check if previously saved session exists in remote sessions
+        let targetId = remoteSessions[0].id;
+        try {
+          const savedId = localStorage.getItem('lenny_active_session_id');
+          if (savedId && remoteSessions.some(s => s.id === savedId)) {
+            targetId = savedId;
+          }
+        } catch {}
+
+        // Fetch details for target active session
+        const activeRemote = await api.fetchSessionDetail(targetId);
+        const updatedRemote = remoteSessions.map(s => {
+          if (s.id === targetId && activeRemote) {
+            return {
+              ...s,
+              messages: activeRemote.messages || [],
+              artifactIds: (activeRemote.artifacts || []).map(a => a.id),
+            };
+          }
+          return s;
+        });
+
+        setSessions(updatedRemote);
+        setActiveSessionId(targetId);
       }
     }
     syncWithBackend();
@@ -38,6 +60,9 @@ export function useSession() {
 
   const selectSession = useCallback(async (sessionId: string) => {
     setActiveSessionId(sessionId);
+    try {
+      localStorage.setItem('lenny_active_session_id', sessionId);
+    } catch {}
     // Hydrate messages from backend if not yet loaded
     const targetSession = sessions.find(s => s.id === sessionId);
     if (!targetSession || targetSession.messages.length === 0) {
@@ -83,6 +108,9 @@ export function useSession() {
     };
     setSessions(prev => [newSession, ...prev.filter(s => s.id !== newId)]);
     setActiveSessionId(newId);
+    try {
+      localStorage.setItem('lenny_active_session_id', newId);
+    } catch {}
     return newSession;
   }, []);
 

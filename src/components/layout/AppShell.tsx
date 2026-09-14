@@ -104,15 +104,28 @@ export const AppShell: React.FC = () => {
   const handleSelectModel = useCallback((model: ModelOption) => {
     if (activeSession && model.id !== activeSession.activeModelId) {
       setSessionModel(activeSessionId, model.id);
-      addMessageToSession(activeSessionId, {
-        id: 'sys-' + Date.now(),
-        role: 'system',
-        content: `Switched to ${model.name} · ${model.provider}`,
-        timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-      });
+      const hasMessages = activeSession.messages.some(m => m.role === 'user' || m.role === 'assistant');
+      if (hasMessages) {
+        addMessageToSession(activeSessionId, {
+          id: 'sys-' + Date.now(),
+          role: 'system',
+          content: `Switched to ${model.name} · ${model.provider}`,
+          timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+        });
+      }
       toast(`Active model changed to ${model.name}`, 'info');
     }
   }, [activeSession, activeSessionId, setSessionModel, addMessageToSession, toast]);
+
+  const handleSwitchToCloud = useCallback(() => {
+    const cloudModel = MODEL_OPTIONS.find(m => m.provider === 'Cloud') || MODEL_OPTIONS[0];
+    handleSelectModel(cloudModel);
+  }, [handleSelectModel]);
+
+  const handleSwitchToLocal = useCallback(() => {
+    const localModel = MODEL_OPTIONS.find(m => m.provider === 'Local') || MODEL_OPTIONS[1];
+    handleSelectModel(localModel);
+  }, [handleSelectModel]);
 
   // Global Keyboard Shortcuts (Part I)
   useEffect(() => {
@@ -161,13 +174,6 @@ export const AppShell: React.FC = () => {
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [createNewSession, toggleViewer, closeViewer, toggleSidebar, isViewerOpen, isMobileDrawerOpen, isModelSelectorOpen, toast]);
-
-  const handleSwitchToCloud = useCallback(() => {
-    const cloudModel = MODEL_OPTIONS.find(m => m.id === 'openai-cloud');
-    if (cloudModel) {
-      handleSelectModel(cloudModel);
-    }
-  }, [handleSelectModel]);
 
   return (
     <div className="flex h-screen w-screen overflow-hidden bg-paper-0 font-sans text-ink-950 antialiased">
@@ -249,6 +255,7 @@ export const AppShell: React.FC = () => {
               onOpenArtifact={openArtifact}
               onOpenModelSelector={() => setIsModelSelectorOpen(true)}
               onSwitchToCloud={handleSwitchToCloud}
+              onSwitchToLocal={handleSwitchToLocal}
               textareaRef={composerTextareaRef}
             />
           </main>

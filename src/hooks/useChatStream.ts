@@ -44,9 +44,27 @@ export function useChatStream({
       setIsStreaming(true);
 
       // Try calling backend RAG API first
-      setLoadingStage(isEssayRequest ? 'Structuring essay…' : 'Retrieving transcripts…');
+      const initialStage = isEssayRequest ? 'Structuring essay…' : 'Retrieving transcripts…';
+      setLoadingStage(initialStage);
+      const startTime = Date.now();
+      const isLocal = activeModelId.includes('ollama') || activeModelId.includes('local');
+      const stageTimer = setInterval(() => {
+        const elapsed = (Date.now() - startTime) / 1000;
+        if (isEssayRequest) {
+          if (elapsed > 30) setLoadingStage('Finalizing 1,250-word draft…');
+          else if (elapsed > 15) setLoadingStage('Synthesizing frameworks and takeaways…');
+          else if (elapsed > 5) setLoadingStage('Grounding claims in podcast transcripts…');
+        } else {
+          if (elapsed > 45) setLoadingStage(isLocal ? 'Generating response (local CPU inference in progress)…' : 'Finalizing response…');
+          else if (elapsed > 20) setLoadingStage(isLocal ? 'Synthesizing claims with Pi Coding Agent…' : 'Synthesizing response…');
+          else if (elapsed > 8) setLoadingStage('Analyzing guest frameworks and quotes…');
+          else if (elapsed > 3) setLoadingStage('Searching podcast archives for relevant citations…');
+        }
+      }, 1500);
+
       try {
         const backendRes = await api.sendChat(sessionId, content, activeModelId, isEssayRequest);
+        clearInterval(stageTimer);
         if (backendRes && backendRes.assistantMessage) {
           const ast = backendRes.assistantMessage;
           const assistantMsgId = ast.id || ('msg-' + (Date.now() + 2));
@@ -100,6 +118,7 @@ export function useChatStream({
           return;
         }
       } catch (err) {
+        clearInterval(stageTimer);
         console.warn('Backend chat API call failed, falling back to local simulation:', err);
       }
 

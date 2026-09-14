@@ -15,6 +15,7 @@ interface ConversationPaneProps {
   onOpenArtifact?: (artifactId: string) => void;
   onOpenModelSelector?: () => void;
   onSwitchToCloud?: () => void;
+  onSwitchToLocal?: () => void;
   textareaRef?: React.RefObject<HTMLTextAreaElement | null>;
 }
 
@@ -28,12 +29,28 @@ export const ConversationPane: React.FC<ConversationPaneProps> = ({
   onOpenArtifact,
   onOpenModelSelector,
   onSwitchToCloud,
+  onSwitchToLocal,
   textareaRef,
 }) => {
+  const hasChatContent = messages.some(
+    m => m.role === 'user' || m.role === 'assistant'
+  );
+
   return (
     <div className="flex-1 flex flex-col h-full overflow-hidden bg-paper-0">
-      {messages.length === 0 ? (
+      {!hasChatContent ? (
         <div className="flex-1 overflow-y-auto">
+          {messages.map(
+            msg =>
+              msg.role === 'system' && (
+                <div
+                  key={msg.id}
+                  className="mt-4 text-center text-xs font-sans text-ink-500 select-none"
+                >
+                  <span>{msg.content}</span>
+                </div>
+              )
+          )}
           <EmptyState onSelectPrompt={onSendMessage} />
         </div>
       ) : (
@@ -43,6 +60,7 @@ export const ConversationPane: React.FC<ConversationPaneProps> = ({
           loadingStage={loadingStage}
           onOpenArtifact={onOpenArtifact}
           onSwitchToCloud={onSwitchToCloud}
+          onSwitchToLocal={onSwitchToLocal}
           onSelectSuggestion={(suggestion) => {
             const lower = suggestion.toLowerCase();
             const isEssay = lower.includes('essay') || lower.includes('ship 30');

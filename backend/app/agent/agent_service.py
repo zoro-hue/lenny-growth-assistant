@@ -249,7 +249,28 @@ class AgentService:
                 await bridge.stop()
 
         if not pi_output.success:
-            # If OpenAI failed and fallback to local Ollama is enabled, try Ollama
+            err_msg_lower = (pi_output.error_message or "").lower()
+            is_quota_exhausted = any(
+                term in err_msg_lower
+                for term in ["credits remaining", "quota", "credit_balance_exhausted", "insufficient_quota", "billing"]
+            )
+            if actual_provider == "openai" and is_quota_exhausted:
+                logger.warning(f"[PiAgent] OpenAI quota/credit exhausted: {pi_output.error_message}")
+                return AgentExecutionResult(
+                    content="",
+                    status="error",
+                    citations=[],
+                    requested_provider=requested_provider,
+                    actual_provider=actual_provider,
+                    fallback_reason="openai_quota_exhausted",
+                    error_details={
+                        "message": "OpenAI billing quota exceeded: You have no credits remaining on your OpenAI account. Please add billing credits at https://platform.openai.com/settings/organization/billing/ or switch to the Local Ollama model.",
+                        "canSwitchToCloud": False,
+                        "canSwitchToLocal": True,
+                    },
+                )
+
+            # If OpenAI failed for network/transient error and fallback to local Ollama is enabled, try Ollama
             is_fallback_allowed = (
                 fallback_enabled if fallback_enabled is not None else settings.model_fallback_enabled
             )

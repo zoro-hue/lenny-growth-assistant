@@ -11,6 +11,7 @@ interface MessageListProps {
   loadingStage: string | null;
   onOpenArtifact?: (artifactId: string) => void;
   onSwitchToCloud?: () => void;
+  onSwitchToLocal?: () => void;
   onSelectSuggestion?: (suggestion: string) => void;
 }
 
@@ -20,6 +21,7 @@ export const MessageList: React.FC<MessageListProps> = ({
   loadingStage,
   onOpenArtifact,
   onSwitchToCloud,
+  onSwitchToLocal,
   onSelectSuggestion,
 }) => {
   const bottomRef = useRef<HTMLDivElement>(null);
@@ -57,6 +59,7 @@ export const MessageList: React.FC<MessageListProps> = ({
               artifacts={artifacts}
               onOpenArtifact={onOpenArtifact}
               onSwitchToCloud={onSwitchToCloud}
+              onSwitchToLocal={onSwitchToLocal}
               onSelectSuggestion={onSelectSuggestion}
             />
           );
