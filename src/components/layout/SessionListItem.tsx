@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Check, Edit2, Trash2, X } from 'lucide-react';
+import { Check, Edit2, Trash2, X, MessageSquare } from 'lucide-react';
 import { Session } from '../../types/chat';
 
 interface SessionListItemProps {
@@ -53,15 +53,13 @@ export const SessionListItem: React.FC<SessionListItemProps> = ({
         onClick={() => onSelect(session.id)}
         title={session.title}
         aria-label={`Switch to session: ${session.title}`}
-        className={`w-10 h-10 mx-auto my-1 rounded flex items-center justify-center font-sans text-xs transition-colors duration-fast relative group focus-visible:outline-evidence-600 ${
+        className={`w-10 h-10 mx-auto my-1 rounded-md flex items-center justify-center transition-colors duration-fast relative group focus-visible:outline-evidence-600 ${
           isActive
-            ? 'bg-paper-0 text-evidence-600 font-semibold border-l-2 border-evidence-600 shadow-xs'
-            : 'text-ink-700 hover:bg-paper-200/80 hover:text-ink-950'
+            ? 'bg-paper-0 text-evidence-600 font-semibold shadow-xs border border-line-200'
+            : 'text-ink-500 hover:bg-paper-200/80 hover:text-ink-950'
         }`}
       >
-        <span className="truncate max-w-[28px] uppercase">
-          {session.title.slice(0, 2)}
-        </span>
+        <MessageSquare className="w-4 h-4" />
       </button>
     );
   }

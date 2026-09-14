@@ -186,7 +186,7 @@ export const AppShell: React.FC = () => {
             deleteSession(sessionId);
             toast('Conversation deleted', 'info');
           }}
-          isRailMode={isDesktopMedium || isSidebarCollapsed}
+          isCollapsed={isSidebarCollapsed}
           onToggleCollapse={toggleSidebar}
         />
       ) : (
@@ -231,7 +231,8 @@ export const AppShell: React.FC = () => {
           onToggleModelSelector={() => setIsModelSelectorOpen(prev => !prev)}
           onCloseModelSelector={() => setIsModelSelectorOpen(false)}
           onToggleSidebar={toggleSidebar}
-          isSidebarCollapsed={isDesktopMedium || isSidebarCollapsed}
+          isSidebarCollapsed={isSidebarCollapsed}
+          onNewChat={createNewSession}
         />
 
         {/* Workspace Body: Conversation Pane + Artifact Viewer */}

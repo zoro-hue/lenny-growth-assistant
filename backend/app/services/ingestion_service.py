@@ -81,7 +81,7 @@ class IngestionService:
         for doc in discovered_docs:
             title = doc.get("title", "Untitled Episode")
             guest = doc.get("guest", "Unknown Guest")
-            source_url = doc.get("source_url") or doc.get("transcript_url") or ""
+            source_url = doc.get("audio_url") or doc.get("source_url") or doc.get("transcript_url") or ""
 
             # Check idempotency: does this episode already exist?
             existing_ep = await cls._find_existing_episode(db, title, source_url)

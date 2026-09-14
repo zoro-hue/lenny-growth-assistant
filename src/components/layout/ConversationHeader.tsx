@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Menu, PanelRight, Check, Edit2, FileText, PanelLeft, PanelLeftOpen } from 'lucide-react';
+import { Menu, PanelRight, Check, Edit2, FileText, PanelLeft, PanelLeftOpen, Plus } from 'lucide-react';
 import { ModelOption } from '../../types/chat';
 import { ModelProviderSelector } from './ModelProviderSelector';
 
@@ -18,6 +18,7 @@ interface ConversationHeaderProps {
   onCloseModelSelector?: () => void;
   onToggleSidebar?: () => void;
   isSidebarCollapsed?: boolean;
+  onNewChat?: () => void;
 }
 
 export const ConversationHeader: React.FC<ConversationHeaderProps> = ({
@@ -35,6 +36,7 @@ export const ConversationHeader: React.FC<ConversationHeaderProps> = ({
   onCloseModelSelector,
   onToggleSidebar,
   isSidebarCollapsed = false,
+  onNewChat,
 }) => {
   const [isEditingTitle, setIsEditingTitle] = useState(false);
   const [titleInput, setTitleInput] = useState(sessionTitle);
@@ -63,19 +65,32 @@ export const ConversationHeader: React.FC<ConversationHeaderProps> = ({
             <Menu className="w-5 h-5" />
           </button>
         ) : onToggleSidebar ? (
-          <button
-            type="button"
-            onClick={onToggleSidebar}
-            title={isSidebarCollapsed ? "Expand sidebar (⌘B)" : "Collapse sidebar (⌘B)"}
-            aria-label={isSidebarCollapsed ? "Expand sidebar" : "Collapse sidebar"}
-            className="p-1.5 rounded text-ink-600 hover:text-ink-950 hover:bg-paper-100 transition-colors duration-fast focus-visible:outline-evidence-600"
-          >
-            {isSidebarCollapsed ? (
-              <PanelLeftOpen className="w-4 h-4" />
-            ) : (
-              <PanelLeft className="w-4 h-4" />
+          <div className="flex items-center gap-1">
+            <button
+              type="button"
+              onClick={onToggleSidebar}
+              title={isSidebarCollapsed ? "Expand sidebar (⌘B)" : "Collapse sidebar (⌘B)"}
+              aria-label={isSidebarCollapsed ? "Expand sidebar" : "Collapse sidebar"}
+              className="p-1.5 rounded text-ink-600 hover:text-ink-950 hover:bg-paper-100 transition-colors duration-fast focus-visible:outline-evidence-600"
+            >
+              {isSidebarCollapsed ? (
+                <PanelLeftOpen className="w-4 h-4" />
+              ) : (
+                <PanelLeft className="w-4 h-4" />
+              )}
+            </button>
+            {isSidebarCollapsed && onNewChat && (
+              <button
+                type="button"
+                onClick={onNewChat}
+                title="New chat (⌘N)"
+                aria-label="New chat"
+                className="p-1.5 rounded text-ink-600 hover:text-ink-950 hover:bg-paper-100 transition-colors duration-fast focus-visible:outline-evidence-600"
+              >
+                <Plus className="w-4 h-4" />
+              </button>
             )}
-          </button>
+          </div>
         ) : null}
 
         {isEditingTitle ? (

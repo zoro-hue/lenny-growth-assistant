@@ -2,6 +2,7 @@ import math
 import logging
 from typing import List, Optional
 from sqlalchemy import select, func, asc
+from sqlalchemy.orm import selectinload
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from ..config import settings
@@ -95,6 +96,7 @@ class RetrievalService:
         distance_col = TranscriptChunkModel.embedding.cosine_distance(query_embedding).label("distance")
         stmt = (
             select(TranscriptChunkModel, distance_col)
+            .options(selectinload(TranscriptChunkModel.transcript))
             .where(TranscriptChunkModel.embedding.isnot(None))
             .order_by(asc("distance"))
             .limit(top_k * 2)  # fetch buffer to apply similarity threshold
@@ -124,7 +126,11 @@ class RetrievalService:
         threshold: float,
     ) -> List[SearchResultItem]:
         """In-memory cosine similarity search for SQLite local/test fallback."""
-        stmt = select(TranscriptChunkModel).where(TranscriptChunkModel.embedding.isnot(None))
+        stmt = (
+            select(TranscriptChunkModel)
+            .options(selectinload(TranscriptChunkModel.transcript))
+            .where(TranscriptChunkModel.embedding.isnot(None))
+        )
         chunks = (await db.execute(stmt)).scalars().all()
 
         scored_chunks = []
@@ -152,6 +158,13 @@ class RetrievalService:
         else:
             excerpt = content_sample
 
+        # Prefer audio_url (YouTube) over transcript_url (lennyspodcast.com may be down)
+        episode_url = chunk.source_url or ""
+        if hasattr(chunk, 'transcript') and chunk.transcript and chunk.transcript.audio_url:
+            episode_url = chunk.transcript.audio_url
+        if not episode_url:
+            episode_url = "https://www.lennyspodcast.com"
+
         citation = CitationSchema(
             id=chunk.id,
             episodeNumber=chunk.episode_number,
@@ -160,7 +173,7 @@ class RetrievalService:
             guestRole=chunk.guest_role,
             timestamp=chunk.timestamp or "00:00",
             quoteExcerpt=excerpt,
-            episodeUrl=chunk.source_url or "https://www.lennyspodcast.com",
+            episodeUrl=episode_url,
             relevanceScore=similarity,
         )
 
@@ -171,7 +184,7 @@ class RetrievalService:
             episodeTitle=chunk.episode_title,
             guest=chunk.guest,
             guestRole=chunk.guest_role,
-            sourceUrl=chunk.source_url,
+            sourceUrl=episode_url,
             chunkIndex=chunk.chunk_index,
             timestamp=chunk.timestamp,
             content=chunk.content,

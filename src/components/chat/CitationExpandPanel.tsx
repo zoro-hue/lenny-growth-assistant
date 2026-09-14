@@ -64,7 +64,7 @@ export const CitationExpandPanel: React.FC<CitationExpandPanelProps> = ({
           rel="noopener noreferrer"
           className="inline-flex items-center gap-1 font-medium text-evidence-600 hover:text-evidence-700 underline underline-offset-2 focus-visible:outline-evidence-600"
         >
-          <span>Open episode</span>
+          <span>{citation.episodeUrl?.includes('youtube.com') ? 'Watch episode' : 'Open episode'}</span>
           <ExternalLink className="w-3 h-3" />
         </a>
       </div>

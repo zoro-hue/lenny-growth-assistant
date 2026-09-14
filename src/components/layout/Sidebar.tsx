@@ -11,6 +11,7 @@ interface SidebarProps {
   onRenameSession: (sessionId: string, newTitle: string) => void;
   onDeleteSession?: (sessionId: string) => void;
   isRailMode?: boolean;
+  isCollapsed?: boolean;
   isMobileDrawer?: boolean;
   onCloseDrawer?: () => void;
   isLoadingSessions?: boolean;
@@ -25,6 +26,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
   onRenameSession,
   onDeleteSession,
   isRailMode = false,
+  isCollapsed = false,
   isMobileDrawer = false,
   onCloseDrawer,
   isLoadingSessions = false,
@@ -32,82 +34,46 @@ export const Sidebar: React.FC<SidebarProps> = ({
 }) => {
   const groups: SessionGroupType[] = ['Today', 'Yesterday', 'Previous 7 days', 'Older'];
 
+  // When collapsed, render as icon rail mode
+  const showAsRail = isCollapsed || isRailMode;
+
   return (
     <aside
       aria-label="Conversation History"
-      className={`bg-paper-100 border-r border-line-200 flex flex-col h-full select-none z-30 transition-all duration-300 ease-in-out ${
+      className={`bg-paper-100 flex flex-col h-full select-none z-30 transition-all duration-300 ease-in-out flex-shrink-0 ${
         isMobileDrawer
-          ? 'fixed inset-y-0 left-0 w-[280px] shadow-2xl z-50'
-          : isRailMode
-          ? 'w-[56px]'
-          : 'w-[240px]'
+          ? 'fixed inset-y-0 left-0 w-[280px] shadow-2xl z-50 border-r border-line-200'
+          : isCollapsed
+          ? 'w-0 border-r-0 overflow-hidden opacity-0 pointer-events-none'
+          : 'w-[260px] border-r border-line-200 opacity-100'
       }`}
     >
       {/* Top Header / New Chat Action */}
       <div className="p-2.5 sm:p-3 border-b border-line-200/60 flex items-center justify-between gap-1.5">
-        {isRailMode ? (
-          <div className="flex flex-col items-center gap-2 w-full">
-            {onToggleCollapse && (
-              <button
-                type="button"
-                onClick={onToggleCollapse}
-                title="Expand sidebar (⌘B)"
-                aria-label="Expand sidebar"
-                className="w-10 h-8 rounded-md text-ink-600 hover:text-ink-950 hover:bg-paper-200 transition-colors duration-fast flex items-center justify-center focus-visible:outline-evidence-600"
-              >
-                <PanelLeftOpen className="w-4 h-4" />
-              </button>
-            )}
-            <button
-              type="button"
-              onClick={onNewChat}
-              title="New Chat (⌘N)"
-              aria-label="New Chat"
-              className="w-10 h-10 mx-auto rounded-md bg-paper-0 border border-line-200 text-ink-950 hover:bg-paper-200 transition-colors duration-fast flex items-center justify-center focus-visible:outline-evidence-600 shadow-xs"
-            >
-              <Plus className="w-4 h-4" />
-            </button>
-          </div>
-        ) : (
-          <>
-            <button
-              type="button"
-              onClick={() => {
-                onNewChat();
-                if (isMobileDrawer) onCloseDrawer?.();
-              }}
-              className="flex-1 flex items-center justify-center gap-2 py-2 px-3 rounded-pill bg-paper-0 border border-line-200 text-ink-950 font-sans text-sm font-medium hover:bg-paper-200/60 transition-colors duration-fast shadow-xs focus-visible:outline-evidence-600"
-            >
-              <Plus className="w-4 h-4 text-ink-700" />
-              <span>New chat</span>
-              <span className="text-[10px] font-mono text-ink-500 ml-auto hidden sm:inline">
-                ⌘N
-              </span>
-            </button>
+        <button
+          type="button"
+          onClick={() => {
+            onNewChat();
+            if (isMobileDrawer) onCloseDrawer?.();
+          }}
+          className="flex-1 flex items-center justify-center gap-2 py-2 px-3 rounded-pill bg-paper-0 border border-line-200 text-ink-950 font-sans text-sm font-medium hover:bg-paper-200/60 transition-colors duration-fast shadow-xs focus-visible:outline-evidence-600"
+        >
+          <Plus className="w-4 h-4 text-ink-700" />
+          <span>New chat</span>
+          <span className="text-[10px] font-mono text-ink-500 ml-auto hidden sm:inline">
+            ⌘N
+          </span>
+        </button>
 
-            {!isMobileDrawer && onToggleCollapse && (
-              <button
-                type="button"
-                onClick={onToggleCollapse}
-                title="Collapse sidebar (⌘B)"
-                aria-label="Collapse sidebar"
-                className="p-1.5 rounded-md text-ink-500 hover:text-ink-950 hover:bg-paper-200 transition-colors duration-fast flex-shrink-0 focus-visible:outline-evidence-600"
-              >
-                <PanelLeftClose className="w-4 h-4" />
-              </button>
-            )}
-
-            {isMobileDrawer && (
-              <button
-                type="button"
-                onClick={onCloseDrawer}
-                aria-label="Close sidebar"
-                className="p-1.5 rounded text-ink-500 hover:text-ink-950 hover:bg-paper-200 flex-shrink-0"
-              >
-                <X className="w-4 h-4" />
-              </button>
-            )}
-          </>
+        {isMobileDrawer && (
+          <button
+            type="button"
+            onClick={onCloseDrawer}
+            aria-label="Close sidebar"
+            className="p-1.5 rounded text-ink-500 hover:text-ink-950 hover:bg-paper-200 flex-shrink-0"
+          >
+            <X className="w-4 h-4" />
+          </button>
         )}
       </div>
 
@@ -130,7 +96,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
             return (
               <div key={group} className="mb-4">
                 {/* Sentence case group title, no tracked-caps per Spec Part B.2 */}
-                {!isRailMode && (
+                {!showAsRail && (
                   <div className="px-3 py-1 text-xs font-sans font-medium text-ink-500">
                     {group}
                   </div>
@@ -141,7 +107,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                       key={session.id}
                       session={session}
                       isActive={session.id === activeSessionId}
-                      isRailMode={isRailMode}
+                      isRailMode={showAsRail}
                       onSelect={id => {
                         onSelectSession(id);
                         if (isMobileDrawer) onCloseDrawer?.();
@@ -158,7 +124,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
       </div>
 
       {/* Footer */}
-      {!isRailMode && (
+      {!showAsRail && (
         <div className="p-3 border-t border-line-200 text-xs font-sans text-ink-500 flex items-center justify-between">
           <div className="flex items-center gap-1.5">
             <Radio className="w-3.5 h-3.5 text-evidence-600" />

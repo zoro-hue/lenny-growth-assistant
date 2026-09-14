@@ -96,7 +96,7 @@ async def test_ship30_citation_propagation_and_no_fabrication(test_db: AsyncSess
     for cit in citations:
         assert cit["guest"] in ("Elena Verna", "Casey Winters", "Brian Balfour")
         assert cit["episode_title"] is not None
-        assert cit["episode_url"].startswith("https://www.lennyspodcast.com")
+        assert cit["episode_url"].startswith("https://www.lennyspodcast.com") or "youtube.com" in cit["episode_url"]
         assert len(cit["quote_excerpt"]) > 10
 
     # Verify tool accumulated retrieved chunks for AgentService integration

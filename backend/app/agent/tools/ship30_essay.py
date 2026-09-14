@@ -109,6 +109,14 @@ class Ship30EssayTool(BaseAgentTool):
         unique_guests = set()
         for idx, chunk in enumerate(chunks):
             unique_guests.add(chunk.guest)
+
+            # Prefer audio_url (YouTube) over transcript_url (lennyspodcast.com may be down)
+            ep_url = chunk.source_url or ""
+            if hasattr(chunk, 'transcript') and chunk.transcript and getattr(chunk.transcript, 'audio_url', None):
+                ep_url = chunk.transcript.audio_url
+            if not ep_url:
+                ep_url = "https://www.lennyspodcast.com"
+
             citations.append({
                 "id": f"cit-ship30-{idx+1}",
                 "episode_number": chunk.episode_number,
@@ -117,7 +125,7 @@ class Ship30EssayTool(BaseAgentTool):
                 "guest_role": chunk.guest_role,
                 "timestamp": chunk.timestamp or "00:00:00",
                 "quote_excerpt": chunk.content[:220].strip() + ("..." if len(chunk.content) > 220 else ""),
-                "episode_url": chunk.source_url or "https://www.lennyspodcast.com",
+                "episode_url": ep_url,
             })
 
         # 5. Synthesize Ship 30 for 30 Essay with ~1,250 words

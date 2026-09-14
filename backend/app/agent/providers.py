@@ -1,3 +1,4 @@
+import os
 import json
 import logging
 import socket
@@ -346,7 +347,7 @@ class ProviderManager:
         elif "ollama" in clean_id or "local" in clean_id:
             return OllamaProvider()
         else:
-            if settings.app_env == "testing" and not (settings.openai_api_key and settings.openai_api_key.strip()):
+            if settings.app_env == "testing" and os.environ.get("USE_REAL_OPENAI") != "true":
                 return MockAgentProvider()
             return OpenAIProvider()
 

@@ -315,7 +315,7 @@ When operators discuss this on the podcast, they emphasize focusing on compoundi
           guestRole: 'Former CPO at Eventbrite, Growth Lead at Pinterest',
           timestamp: '15:20',
           quoteExcerpt: "Product-market fit is revealed when a cohort curve stops dropping and runs flat. If you don't have that horizontal floor, nothing else you do matters.",
-          episodeUrl: 'https://www.lennyspodcast.com/casey-winters',
+          episodeUrl: 'https://www.youtube.com/watch?v=WlRfyEpAKxw',
         },
         {
           id: 'cit-' + Date.now() + '-2',
@@ -325,7 +325,7 @@ When operators discuss this on the podcast, they emphasize focusing on compoundi
           guestRole: 'Head of Growth at Lovable, Former Interim CMO at Miro & Amplitude',
           timestamp: '28:44',
           quoteExcerpt: 'B2B growth loops must align with the natural cadence of the organization. Trying to create daily habits for quarterly problems always creates churn.',
-          episodeUrl: 'https://www.lennyspodcast.com/elena-verna',
+          episodeUrl: 'https://www.youtube.com/watch?v=Tlx4fxzuHNw',
         },
       ];
 

@@ -249,6 +249,28 @@ class AgentService:
                 await bridge.stop()
 
         if not pi_output.success:
+            # If OpenAI failed and fallback to local Ollama is enabled, try Ollama
+            is_fallback_allowed = (
+                fallback_enabled if fallback_enabled is not None else settings.model_fallback_enabled
+            )
+            if actual_provider == "openai" and is_fallback_allowed:
+                try:
+                    from .providers import OllamaProvider
+                    ollama_p = OllamaProvider()
+                    if await ollama_p.is_available():
+                        logger.warning(
+                            f"[PiAgent] OpenAI failed ({pi_output.error_message}); falling back to local Ollama."
+                        )
+                        return await cls.run(
+                            db=db,
+                            query=query,
+                            conversation_history=conversation_history,
+                            model_id="ollama-local",
+                            fallback_enabled=False,
+                        )
+                except Exception as fe:
+                    logger.warning(f"[PiAgent] Fallback to Ollama failed: {fe}")
+
             return AgentExecutionResult(
                 content="",
                 status="error",
@@ -258,7 +280,7 @@ class AgentService:
                 fallback_reason=fallback_reason,
                 error_details={
                     "message": pi_output.error_message or "Pi Coding Agent execution failed.",
-                    "canSwitchToCloud": True,
+                    "canSwitchToCloud": actual_provider != "openai",
                 },
             )
 

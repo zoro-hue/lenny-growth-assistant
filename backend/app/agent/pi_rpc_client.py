@@ -158,6 +158,7 @@ class PiRpcClient:
         raw_messages: List[Dict[str, Any]] = []
         final_text = ""
         total_tokens = 0
+        error_message: Optional[str] = None
 
         # Background thread to enqueue stdout lines non-blockingly
         line_queue: queue.Queue[Optional[str]] = queue.Queue()
@@ -266,6 +267,8 @@ class PiRpcClient:
                     msg = event.get("message")
                     if msg and isinstance(msg, dict):
                         raw_messages.append(msg)
+                        if msg.get("stopReason") == "error" or msg.get("errorMessage"):
+                            error_message = msg.get("errorMessage") or "Pi Coding Agent encountered an error."
                         if msg.get("role") == "assistant":
                             content_parts = msg.get("content", [])
                             if isinstance(content_parts, list):
@@ -278,10 +281,26 @@ class PiRpcClient:
                                 final_text += content_parts
 
                 elif event_type in ("agent_settled", "agent_end"):
+                    messages_list = event.get("messages") or []
+                    for m in messages_list:
+                        if isinstance(m, dict) and (m.get("stopReason") == "error" or m.get("errorMessage")):
+                            error_message = m.get("errorMessage") or "Pi Coding Agent encountered an error."
                     break
 
-            if time.time() >= deadline and not final_text:
+            if time.time() >= deadline and not final_text and not error_message:
                 raise TimeoutError(f"Pi Coding Agent execution exceeded timeout limit of {self.timeout}s")
+
+            if error_message and not final_text.strip():
+                return PiExecutionOutput(
+                    content="",
+                    tool_calls_executed=tool_calls,
+                    raw_messages=raw_messages,
+                    provider=provider,
+                    model=model_id,
+                    tokens_used=total_tokens,
+                    success=False,
+                    error_message=error_message,
+                )
 
             # 4. Request last assistant text if empty
             if not final_text.strip():
