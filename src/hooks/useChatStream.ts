@@ -1,4 +1,4 @@
-import { useState, useCallback, useRef } from 'react';
+import { useState, useCallback, useRef, useEffect } from 'react';
 import { Message, Citation } from '../types/chat';
 import { Artifact } from '../types/artifact';
 import { api } from '../services/api';
@@ -11,6 +11,161 @@ interface UseChatStreamOptions {
   addArtifact: (artifact: Artifact) => void;
   addArtifactToSession: (sessionId: string, artifactId: string) => void;
   openArtifactViewer: (artifactId: string) => void;
+  sessionMessages?: Message[];
+}
+
+export interface DerivedArtifactMeta {
+  title: string;
+  intro: string;
+  topicHeadline: string;
+  summaryTopic: string;
+}
+
+export function deriveArtifactMeta(content: string, messages?: Message[]): DerivedArtifactMeta {
+  const clean = content.trim();
+  const lower = clean.toLowerCase().replace(/[.!?]/g, '');
+
+  const isGeneric =
+    lower === 'turn this into a playbook' ||
+    lower === 'turn this into an essay' ||
+    lower === 'make this into a playbook' ||
+    lower === 'make this a playbook' ||
+    lower === 'create a playbook' ||
+    lower === 'write a playbook' ||
+    lower === 'write an essay' ||
+    lower === 'generate a playbook' ||
+    lower === 'generate playbook' ||
+    lower === 'playbook' ||
+    lower === 'essay' ||
+    lower === 'write a ship 30/30 essay' ||
+    lower === 'turn into a playbook' ||
+    lower.startsWith('turn this into') ||
+    lower.startsWith('make this into') ||
+    lower.startsWith('turn into a playbook');
+
+  // If generic request, extract context from prior conversation
+  let priorContext = '';
+  if (isGeneric && messages && messages.length > 0) {
+    for (let i = messages.length - 1; i >= 0; i--) {
+      const m = messages[i];
+      if (m.content && m.content.trim() !== clean) {
+        priorContext += ' ' + m.content;
+      }
+    }
+  }
+
+  const textToAnalyze = (priorContext ? priorContext + ' ' : '') + lower;
+
+  if (
+    textToAnalyze.includes('retention') ||
+    textToAnalyze.includes('cohort') ||
+    textToAnalyze.includes('churn') ||
+    textToAnalyze.includes('flatt')
+  ) {
+    return {
+      title: 'B2B SaaS Retention Playbook',
+      intro: "I've turned the discussion into a practical retention playbook grounded in transcript evidence.",
+      topicHeadline: 'B2B SaaS Retention & Cohort Stabilization',
+      summaryTopic: 'cohort retention curves and disciplined churn management',
+    };
+  }
+
+  if (
+    textToAnalyze.includes('loop') ||
+    textToAnalyze.includes('balfour') ||
+    textToAnalyze.includes('funnel') ||
+    textToAnalyze.includes('flywheel')
+  ) {
+    return {
+      title: 'Growth Loops: A Practical Playbook',
+      intro: "I've synthesized a complete growth loops playbook grounded in transcript frameworks from Brian Balfour and Elena Verna.",
+      topicHeadline: 'Compounding Growth Loops vs. Linear Acquisition Funnels',
+      summaryTopic: 'compounding acquisition loops and qualitative retention systems',
+    };
+  }
+
+  if (
+    textToAnalyze.includes('pmf') ||
+    textToAnalyze.includes('product-market fit') ||
+    textToAnalyze.includes('vohra') ||
+    textToAnalyze.includes('superhuman')
+  ) {
+    return {
+      title: 'Product-Market Fit Engine Playbook',
+      intro: "I've synthesized a tactical PMF framework playbook grounded in transcript guidance from Rahul Vohra and Casey Winters.",
+      topicHeadline: "Rahul Vohra's 4-Step PMF Engine",
+      summaryTopic: 'measuring PMF through high-expectation customer survey segmentation',
+    };
+  }
+
+  if (
+    textToAnalyze.includes('pricing') ||
+    textToAnalyze.includes('ramanujam') ||
+    textToAnalyze.includes('tier') ||
+    textToAnalyze.includes('monetiz')
+  ) {
+    return {
+      title: 'Pricing Strategy Playbook',
+      intro: "I've synthesized a structured pricing strategy playbook grounded in transcript evidence from Madhavan Ramanujam.",
+      topicHeadline: 'Pricing Strategy & Value Realization Milestones',
+      summaryTopic: 'willingness-to-pay discovery and packaging tiers around value realization',
+    };
+  }
+
+  if (
+    textToAnalyze.includes('plg') ||
+    textToAnalyze.includes('product-led') ||
+    textToAnalyze.includes('self-serve')
+  ) {
+    return {
+      title: 'Product-Led Growth Playbook',
+      intro: "I've synthesized a product-led growth playbook grounded in Lenny's Podcast archives.",
+      topicHeadline: 'Product-Led Growth & Expansion Mechanics',
+      summaryTopic: 'self-serve user activation and natural problem frequency loops',
+    };
+  }
+
+  if (
+    textToAnalyze.includes('activation') ||
+    textToAnalyze.includes('aha') ||
+    textToAnalyze.includes('onboard')
+  ) {
+    return {
+      title: 'Product Activation & Onboarding Playbook',
+      intro: "I've synthesized an activation and onboarding playbook grounded in transcript frameworks from Elena Verna.",
+      topicHeadline: 'Time-to-Aha & Habit Activation Protocols',
+      summaryTopic: 'event-based activation triggers and time-to-value acceleration',
+    };
+  }
+
+  // If specific non-generic prompt, clean prompt prefixes into meaningful title
+  if (!isGeneric) {
+    const stripped = clean
+      .replace(/^(write a ship 30\/30 playbook on|write a ship 30\/30 playbook about|write a playbook on|write a playbook about|write an essay on|write an essay about|create a playbook on|create a playbook about|generate a playbook on|generate a playbook about|playbook on|essay on)\s*/i, '')
+      .replace(/^the\s+/i, '')
+      .trim();
+
+    if (stripped.length > 3) {
+      const titleCase = stripped
+        .split(' ')
+        .map(w => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase())
+        .join(' ');
+      const cleanTitle = titleCase.toLowerCase().includes('playbook') ? titleCase : `${titleCase} Playbook`;
+      return {
+        title: cleanTitle,
+        intro: `I've synthesized a complete playbook on ${titleCase} grounded in the relevant Lenny Podcast transcripts.`,
+        topicHeadline: titleCase,
+        summaryTopic: titleCase.toLowerCase(),
+      };
+    }
+  }
+
+  return {
+    title: 'Growth Strategy Playbook',
+    intro: "I've synthesized a complete growth playbook grounded in the relevant Lenny Podcast transcripts.",
+    topicHeadline: 'Product & Growth Operating Architecture',
+    summaryTopic: 'core retention mechanics, disciplined cohort analysis, and compounding growth loops',
+  };
 }
 
 export function useChatStream({
@@ -21,10 +176,16 @@ export function useChatStream({
   addArtifact,
   addArtifactToSession,
   openArtifactViewer,
+  sessionMessages,
 }: UseChatStreamOptions) {
   const [isStreaming, setIsStreaming] = useState(false);
   const [loadingStage, setLoadingStage] = useState<string | null>(null);
   const abortControllerRef = useRef<boolean>(false);
+  const sessionMessagesRef = useRef<Message[]>(sessionMessages || []);
+
+  useEffect(() => {
+    sessionMessagesRef.current = sessionMessages || [];
+  }, [sessionMessages]);
 
   const sendMessage = useCallback(
     async (
@@ -95,9 +256,26 @@ export function useChatStream({
           const assistantMsgId = ast.id || ('msg-' + (Date.now() + 2));
 
           if (backendRes.artifact) {
+            if (
+              backendRes.artifact.title.toLowerCase().includes('turn this into a playbook') ||
+              backendRes.artifact.title.toLowerCase().startsWith('playbook: turn')
+            ) {
+              const meta = deriveArtifactMeta(content, sessionMessagesRef.current);
+              backendRes.artifact.title = meta.title;
+              backendRes.artifact.content = backendRes.artifact.content.replace(
+                /# Playbook: Turn this into a playbook/i,
+                `# ${meta.title}`
+              );
+            }
             addArtifact(backendRes.artifact);
             addArtifactToSession(sessionId, backendRes.artifact.id);
             openArtifactViewer(backendRes.artifact.id);
+          }
+
+          let astContent = ast.content || '';
+          if (astContent.toLowerCase().includes('turn this into a playbook')) {
+            const meta = deriveArtifactMeta(content, sessionMessagesRef.current);
+            astContent = `${meta.intro}\n\nThe playbook provides an executive overview, quantitative benchmarks, and a tactical implementation checklist. I have opened it in the Artifact Workbench to your right.`;
           }
 
           if (ast.status === 'error' || ast.status === 'low-evidence') {
@@ -107,7 +285,7 @@ export function useChatStream({
               role: 'assistant',
               timestamp: ast.timestamp || new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
               status: ast.status,
-              content: ast.content,
+              content: astContent,
               citations: ast.citations || [],
               errorDetails: ast.errorDetails,
             });
@@ -125,7 +303,7 @@ export function useChatStream({
           });
           setLoadingStage(null);
 
-          const words = (ast.content || '').split(' ');
+          const words = astContent.split(' ');
           let currentText = '';
           for (let i = 0; i < words.length; i++) {
             if (abortControllerRef.current) break;
@@ -225,17 +403,18 @@ export function useChatStream({
         await new Promise(r => setTimeout(r, 700));
         if (abortControllerRef.current) return;
 
-        // Create new generated artifact
+        // Create new generated artifact with contextual title & executive summary
+        const meta = deriveArtifactMeta(content, sessionMessagesRef.current);
         const newArtifactId = 'artifact-' + Date.now();
         const generatedArtifact: Artifact = {
           id: newArtifactId,
           sessionId,
-          title: `Playbook: ${content.trim().slice(0, 48)}`,
+          title: meta.title,
           type: 'markdown',
           wordCount: 1280,
           sourceCount: 3,
           createdAt: 'Just now',
-          content: `# Playbook: ${content.trim()}
+          content: `# ${meta.title}
 
 *Synthesized from transcript evidence across Lenny's Podcast episodes with top product and growth operators.*
 
@@ -243,7 +422,7 @@ export function useChatStream({
 
 ## Executive Summary
 
-When scaling B2B and product-led businesses, growth is not an accumulation of disparate hacks; it is the compounding output of tightly coupled feedback loops. This document operationalizes the direct transcript guidance from Lenny's Podcast discussions.
+When scaling B2B and product-led businesses, growth is not an accumulation of disparate hacks; it is the compounding output of tightly coupled feedback loops. This document formalizes the operational architecture for **${meta.topicHeadline}**, synthesized directly from empirical frameworks shared on Lenny's Podcast on ${meta.summaryTopic}.
 
 ---
 
@@ -290,9 +469,9 @@ As highlighted across conversations with **Casey Winters** and **Elena Verna**, 
           timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
           status: 'complete',
           artifactId: newArtifactId,
-          content: `I've synthesized a complete Ship 30/30 playbook on **${content.trim()}** grounded in transcripts from Casey Winters, Elena Verna, and Brian Balfour.
+          content: `${meta.intro}
 
-The essay provides an executive overview, quantitative benchmarks, and a tactical implementation checklist. I have opened it in the Artifact Workbench to your right.`,
+The playbook provides an executive overview, quantitative benchmarks, and a tactical implementation checklist. I have opened it in the Artifact Workbench to your right.`,
         });
 
         openArtifactViewer(newArtifactId);

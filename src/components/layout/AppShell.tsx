@@ -96,6 +96,7 @@ export const AppShell: React.FC = () => {
     openArtifactViewer: (artId: string) => {
       openArtifact(artId);
     },
+    sessionMessages: activeSession?.messages || [],
   });
 
   const activeModel =
