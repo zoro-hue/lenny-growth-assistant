@@ -8,40 +8,40 @@
 
 ```mermaid
 flowchart TD
-    User([User / Growth Operator]) --> Frontend[Editorial React Frontend (Port 3000)]
-    Frontend --> ModelSelector{Model Provider Selector}
+    User(["User / Growth Operator"]) --> Frontend["Editorial React Frontend (Port 3000)"]
+    Frontend --> ModelSelector{"Model Provider Selector"}
     
-    ModelSelector -->|GET /api/models| ModelsRouter[Models API Router]
-    ModelSelector -->|POST /api/chat| ChatService[Chat Service]
-    ModelSelector -->|PATCH /api/sessions/:id| SessionService[Session Service]
+    ModelSelector -->|"GET /api/models"| ModelsRouter["Models API Router"]
+    ModelSelector -->|"POST /api/chat"| ChatService["Chat Service"]
+    ModelSelector -->|"PATCH /api/sessions/:id"| SessionService["Session Service"]
     
-    ChatService --> SessionStore[(Session & Message Store)]
-    ChatService --> AgentService[Pi Coding Agent Service]
+    ChatService --> SessionStore[("Session & Message Store")]
+    ChatService --> AgentService["Pi Coding Agent Service"]
     
     subgraph AgentLayer ["Pi Coding Agent Layer (backend/app/agent)"]
-        AgentConfig[Agent Config & System Directives] --> AgentRunner[Autonomous ReAct Loop]
-        AgentRunner --> ProviderRouter{Provider Manager}
+        AgentConfig["Agent Config & System Directives"] --> AgentRunner["Autonomous ReAct Loop"]
+        AgentRunner --> ProviderRouter{"Provider Manager"}
         
-        ProviderRouter -->|Cloud| OpenAIProvider[OpenAI Provider (gpt-4o-mini)]
-        ProviderRouter -->|Local| OllamaProvider[Ollama Provider (llama3.2:3b)]
-        ProviderRouter -->|Testing/Mock| MockProvider[Mock Agent Provider]
+        ProviderRouter -->|"Cloud"| OpenAIProvider["OpenAI Provider (gpt-4o-mini)"]
+        ProviderRouter -->|"Local"| OllamaProvider["Ollama Provider (llama3.2:3b)"]
+        ProviderRouter -->|"Testing/Mock"| MockProvider["Mock Agent Provider"]
         
-        AgentRunner -->|Tool Execution| ToolRegistry[Tool Registry]
-        ToolRegistry --> ToolSearch[search_lenny_transcripts]
-        ToolRegistry --> ToolLookup[lookup_episode_source]
-        ToolRegistry --> ToolShip30[generate_ship30_essay (Ship 30 Skill)]
-        ToolRegistry --> ToolArtifact[generate_artifact (Artifact Generator)]
+        AgentRunner -->|"Tool Execution"| ToolRegistry["Tool Registry"]
+        ToolRegistry --> ToolSearch["search_lenny_transcripts"]
+        ToolRegistry --> ToolLookup["lookup_episode_source"]
+        ToolRegistry --> ToolShip30["generate_ship30_essay (Ship 30 Skill)"]
+        ToolRegistry --> ToolArtifact["generate_artifact (Artifact Generator)"]
     end
     
-    ToolSearch --> RetrievalService[RAG Retrieval Service]
+    ToolSearch --> RetrievalService["RAG Retrieval Service"]
     ToolShip30 --> RetrievalService
     ToolArtifact --> RetrievalService
-    RetrievalService --> Database[(PostgreSQL pgvector / SQLite Fallback)]
+    RetrievalService --> Database[("PostgreSQL pgvector / SQLite Fallback")]
     
-    ToolSearch -.->|Retrieved Chunks| AgentRunner
-    AgentRunner --> ResponseSynthesis[Grounded Synthesis & Citation Extraction]
+    ToolSearch -.->|"Retrieved Chunks"| AgentRunner
+    AgentRunner --> ResponseSynthesis["Grounded Synthesis & Citation Extraction"]
     ResponseSynthesis --> ChatService
-    ChatService --> ArtifactService[Playbook Artifact Service]
+    ChatService --> ArtifactService["Playbook Artifact Service"]
     ChatService --> Frontend
 ```
 

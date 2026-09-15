@@ -2,9 +2,19 @@
 
 > A grounded research and operational assistant for product and growth leaders, powered by Lenny's Podcast transcripts with full source traceability, autonomous Pi Coding Agent reasoning, multi-provider inference (OpenAI + Local Ollama), and an editorial frontend interface.
 
-[![Backend Tests](https://img.shields.io/badge/pytest-69%20passed%20(100%25)-2ea44f.svg)](#running-tests)
-[![Build Status](https://img.shields.io/badge/frontend-clean%20build-success.svg)](#frontend-setup)
+[![Backend Tests](https://img.shields.io/badge/pytest-80%20passed%20(100%25)-2ea44f.svg)](#-verification--test-suite)
+[![Build Status](https://img.shields.io/badge/frontend-clean%20build-success.svg)](#3-frontend-setup)
+[![Walkthrough Video](https://img.shields.io/badge/YouTube-Video%20Walkthrough-red?logo=youtube)](https://www.youtube.com/watch?v=ZgBUhb2YiYw)
 [![License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
+
+---
+
+## 🎬 Video Walkthrough
+
+[![Watch the Demo Video](https://img.youtube.com/vi/ZgBUhb2YiYw/maxresdefault.jpg)](https://www.youtube.com/watch?v=ZgBUhb2YiYw)
+
+> 📺 **[Watch the Complete End-to-End Walkthrough on YouTube](https://www.youtube.com/watch?v=ZgBUhb2YiYw)**  
+> Watch a comprehensive walkthrough demonstrating zero-fabrication grounded research, dual-speaker perspective comparisons (Brian Balfour vs. Elena Verna), Ship 30 essay generation, interactive artifact workbench rendering, multi-model switching (OpenAI GPT-4o-mini + local Ollama llama3.2:3b), and full source trace exploration.
 
 ---
 
@@ -43,30 +53,30 @@
 
 ```mermaid
 flowchart TD
-    User([Growth Leader / Operator]) --> Frontend[React 18 + TS Editorial UI (Port 3000)]
-    Frontend --> ModelSelector{Model Selector}
+    User(["Growth Leader / Operator"]) --> Frontend["React 19 + TS Editorial UI (Port 3000)"]
+    Frontend --> ModelSelector{"Model Selector"}
     
-    ModelSelector -->|POST /api/chat| ChatService[FastAPI Chat Service]
-    ModelSelector -->|GET /api/models| ModelsRouter[Models API Router]
+    ModelSelector -->|"POST /api/chat"| ChatService["FastAPI Chat Service"]
+    ModelSelector -->|"GET /api/models"| ModelsRouter["Models API Router"]
     
-    ChatService --> AgentService[Pi Coding Agent Service]
-    AgentService --> PiRPC[Pi RPC Subprocess Bridge]
+    ChatService --> AgentService["Pi Coding Agent Service"]
+    AgentService --> PiRPC["Pi RPC Subprocess Bridge"]
     
-    PiRPC --> ProviderManager{Provider Manager}
-    ProviderManager -->|Cloud| OpenAIProvider[OpenAI (gpt-4o-mini)]
-    ProviderManager -->|Local| OllamaProvider[Ollama (llama3.2:3b)]
+    PiRPC --> ProviderManager{"Provider Manager"}
+    ProviderManager -->|"Cloud"| OpenAIProvider["OpenAI (gpt-4o-mini)"]
+    ProviderManager -->|"Local"| OllamaProvider["Ollama (llama3.2:3b)"]
     
-    PiRPC --> ToolBridge[Lenny Tool Extensions]
-    ToolBridge --> ToolSearch[search_lenny_transcripts]
-    ToolBridge --> ToolShip30[generate_ship30_essay]
-    ToolBridge --> ToolArtifact[generate_artifact]
+    PiRPC --> ToolBridge["Lenny Tool Extensions"]
+    ToolBridge --> ToolSearch["search_lenny_transcripts"]
+    ToolBridge --> ToolShip30["generate_ship30_essay"]
+    ToolBridge --> ToolArtifact["generate_artifact"]
     
-    ToolSearch --> RAG[Retrieval Service]
-    RAG --> VectorDB[(PostgreSQL pgvector / SQLite Fallback)]
+    ToolSearch --> RAG["Retrieval Service"]
+    RAG --> VectorDB[("PostgreSQL pgvector / SQLite Fallback")]
     
-    AgentService --> ChatResponse[Grounded Response + Zero-Fabrication Citations]
+    AgentService --> ChatResponse["Grounded Response + Zero-Fabrication Citations"]
     ChatResponse --> Frontend
-    ChatResponse --> Workbench[Artifact Workbench (440px Panel)]
+    ChatResponse --> Workbench["Artifact Workbench (440px Panel)"]
 ```
 
 ---
@@ -113,6 +123,10 @@ python run_ingest.py --sample
 
 Seed professional research demo conversations (6 curated sessions):
 ```bash
+# If running inside backend/ directory:
+python -m app.scripts.seed_demo --reset
+
+# Or from repository root:
 python -m backend.app.scripts.seed_demo --reset
 ```
 
@@ -144,10 +158,10 @@ This application is engineered for turnkey production deployment with a decouple
 
 ```mermaid
 flowchart LR
-    Browser([End User Browser]) -->|HTTPS| Vercel[Vercel Frontend (SPA)]
-    Vercel -->|VITE_API_URL / REST + SSE| Railway[Railway FastAPI Backend]
-    Railway -->|DATABASE_URL / asyncpg| RailwayPG[(Railway PostgreSQL + pgvector)]
-    Railway -->|HTTPS / API Key| OpenAI[OpenAI API (gpt-4o-mini & embeddings)]
+    Browser(["End User Browser"]) -->|"HTTPS"| Vercel["Vercel Frontend (SPA)"]
+    Vercel -->|"VITE_API_URL (REST + SSE)"| Railway["Railway FastAPI Backend"]
+    Railway -->|"DATABASE_URL (asyncpg)"| RailwayPG[("Railway PostgreSQL + pgvector")]
+    Railway -->|"HTTPS / API Key"| OpenAI["OpenAI API (gpt-4o-mini & embeddings)"]
 ```
 
 ---
@@ -242,14 +256,15 @@ Copy `.env.example` to `.env`. Key options:
 
 ## 🧪 Verification & Test Suite
 
-The system includes **69 comprehensive backend tests** covering the full agent lifecycle, grounding assertions, and live Ollama execution:
+The system includes **80 comprehensive backend tests** covering the full agent lifecycle, grounding assertions, live Ollama execution, and production database configuration:
 
 ```bash
 # Run backend tests
-python -m pytest backend/tests -v
+python -m pytest backend/tests --ignore=backend/tests/test_real_ollama.py -v
 ```
 
 **Test Coverage Summary**:
+- **Production Database Configuration & Railway Security**: Automatic Railway URL discovery, asyncpg SSL param mapping, strict production guards preventing SQLite fallback, credential masking in logs (`test_production_database_config.py`)
 - **Speaker-Aware Ranking & Evidence Indicators**: Speaker and episode entity detection, ranking boost without exclusion, qualitative evidence strength labels (`test_speaker_aware_citations.py`)
 - **Compare Perspectives**: Dual-speaker grounding, missing evidence handling, zero fabrication (`test_compare_perspectives.py`)
 - **Contextual Follow-Up Suggestions**: Deterministic suggestion routing to Compare, Ship 30, and Playbooks (`test_follow_up_suggestions.py`)
