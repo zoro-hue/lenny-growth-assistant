@@ -122,6 +122,10 @@ class PiRpcClient:
             str(self.rpc_entry),
             "--no-session",
             "--no-builtin-tools",
+            "--provider",
+            provider,
+            "--model",
+            model_id,
             "-e",
             str(self.extension_path),
         ]
@@ -175,6 +179,19 @@ class PiRpcClient:
         reader_thread = threading.Thread(target=_enqueue_output, daemon=True)
         reader_thread.start()
 
+        # Dedicated background thread to drain stderr non-blockingly and avoid OS pipe deadlocks
+        stderr_lines: List[str] = []
+
+        def _enqueue_stderr():
+            try:
+                for s_line in iter(proc.stderr.readline, ""):
+                    stderr_lines.append(s_line)
+            except Exception:
+                pass
+
+        stderr_thread = threading.Thread(target=_enqueue_stderr, daemon=True)
+        stderr_thread.start()
+
         def _get_line(timeout_sec: float) -> Optional[str]:
             if timeout_sec <= 0:
                 return None
@@ -200,7 +217,17 @@ class PiRpcClient:
             while True:
                 init_res_line = _get_line(min(15.0, max(0.1, deadline - time.time())))
                 if not init_res_line:
-                    raise TimeoutError(f"Timed out waiting for Pi agent set_model response ({provider}/{model_id})")
+                    if proc.poll() is not None:
+                        err_out = "".join(stderr_lines).strip()
+                        return PiExecutionOutput(
+                            content="",
+                            success=False,
+                            error_message=f"Pi process exited prematurely with code {proc.returncode}. Stderr: {err_out}",
+                            provider=provider,
+                            model=model_id,
+                        )
+                    err_out = "".join(stderr_lines).strip()
+                    raise TimeoutError(f"Timed out waiting for Pi agent set_model response ({provider}/{model_id}). Stderr: {err_out}")
 
                 init_data = json.loads(init_res_line)
                 logger.debug(f"[PiRpcClient] init event/response: {init_data}")
@@ -332,21 +359,16 @@ class PiRpcClient:
 
         except Exception as e:
             logger.error(f"[PiRpcClient] Subprocess error during Pi RPC execution: {e}", exc_info=True)
-            stderr_out = ""
             try:
                 if proc.poll() is None:
                     proc.kill()
-                try:
-                    _, err_data = proc.communicate(timeout=2)
-                    stderr_out = err_data or ""
-                except Exception:
-                    pass
             except Exception:
                 pass
+            stderr_out = "".join(stderr_lines).strip()
             return PiExecutionOutput(
                 content="",
                 success=False,
-                error_message=f"Pi execution failed: {str(e)}. Stderr: {stderr_out[:200]}",
+                error_message=f"Pi execution failed: {str(e)}. Stderr: {stderr_out}",
                 provider=provider,
                 model=model_id,
             )

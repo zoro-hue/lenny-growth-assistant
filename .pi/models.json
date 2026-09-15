@@ -1,5 +1,47 @@
 {
   "providers": {
+    "openai": {
+      "name": "OpenAI",
+      "baseUrl": "https://api.openai.com/v1",
+      "api": "openai-responses",
+      "apiKey": "OPENAI_API_KEY",
+      "models": [
+        {
+          "id": "gpt-4o-mini",
+          "name": "GPT-4o mini",
+          "reasoning": false,
+          "input": ["text", "image"],
+          "cost": {
+            "input": 0.15,
+            "output": 0.6,
+            "cacheRead": 0.075,
+            "cacheWrite": 0
+          },
+          "contextWindow": 128000,
+          "maxTokens": 16384,
+          "compat": {
+            "supportsStrictMode": true
+          }
+        },
+        {
+          "id": "gpt-4o",
+          "name": "GPT-4o",
+          "reasoning": false,
+          "input": ["text", "image"],
+          "cost": {
+            "input": 2.5,
+            "output": 10,
+            "cacheRead": 1.25,
+            "cacheWrite": 0
+          },
+          "contextWindow": 128000,
+          "maxTokens": 16384,
+          "compat": {
+            "supportsStrictMode": true
+          }
+        }
+      ]
+    },
     "ollama": {
       "name": "Ollama",
       "baseUrl": "http://localhost:11434/v1",
