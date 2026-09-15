@@ -125,3 +125,36 @@ def test_production_blocks_switch_to_fallback(monkeypatch):
             switch_to_fallback()
     finally:
         settings.app_env = orig_env
+
+
+def test_railway_environment_triggers_production(monkeypatch):
+    monkeypatch.setenv("RAILWAY_ENVIRONMENT", "production")
+    monkeypatch.delenv("DATABASE_URL", raising=False)
+    monkeypatch.delenv("DATABASE_PRIVATE_URL", raising=False)
+    monkeypatch.delenv("DATABASE_PUBLIC_URL", raising=False)
+    monkeypatch.delenv("POSTGRES_URL", raising=False)
+    monkeypatch.delenv("PGHOST", raising=False)
+
+    s = Settings(
+        APP_ENV="development",
+        DATABASE_URL="",
+    )
+    assert s.is_production is True
+    with pytest.raises(ValueError, match="APP_ENV is set to production"):
+        _ = s.async_database_url
+
+
+def test_railway_deployment_id_triggers_production(monkeypatch):
+    monkeypatch.setenv("RAILWAY_DEPLOYMENT_ID", "dep-12345")
+    monkeypatch.delenv("DATABASE_URL", raising=False)
+    monkeypatch.delenv("DATABASE_PRIVATE_URL", raising=False)
+    monkeypatch.delenv("DATABASE_PUBLIC_URL", raising=False)
+    monkeypatch.delenv("POSTGRES_URL", raising=False)
+    monkeypatch.delenv("PGHOST", raising=False)
+
+    s = Settings(
+        APP_ENV="development",
+        DATABASE_URL="",
+    )
+    assert s.is_production is True
+

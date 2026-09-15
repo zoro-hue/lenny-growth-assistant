@@ -62,7 +62,11 @@ class Settings(BaseSettings):
 
     @property
     def is_production(self) -> bool:
-        """Indicates whether running in a production deployment."""
+        """Indicates whether running in a production deployment or Railway environment."""
+        if os.getenv("RAILWAY_ENVIRONMENT", "").strip().lower() in ("production", "prod"):
+            return True
+        if os.getenv("RAILWAY_DEPLOYMENT_ID") and self.app_env.strip().lower() != "development_override":
+            return True
         return self.app_env.strip().lower() in ("production", "prod")
 
     @property
