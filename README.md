@@ -132,6 +132,96 @@ Open `http://localhost:3000` in your browser.
 
 ---
 
+## 🌐 Production Deployment Guide (Railway + Vercel)
+
+This application is engineered for turnkey production deployment with a decoupled frontend and backend:
+
+* **Frontend**: Hosted on **Vercel** (React 19 + TypeScript + Vite SPA)
+* **Backend**: Hosted on **Railway** (FastAPI + Python 3.11 + Docker)
+* **Database**: **Railway PostgreSQL** with `pgvector` extension
+* **Cloud LLM**: **OpenAI** (`gpt-4o-mini` + `text-embedding-3-small`)
+* **Local Ollama**: Preserved for local developer demo environments
+
+```mermaid
+flowchart LR
+    Browser([End User Browser]) -->|HTTPS| Vercel[Vercel Frontend (SPA)]
+    Vercel -->|VITE_API_URL / REST + SSE| Railway[Railway FastAPI Backend]
+    Railway -->|DATABASE_URL / asyncpg| RailwayPG[(Railway PostgreSQL + pgvector)]
+    Railway -->|HTTPS / API Key| OpenAI[OpenAI API (gpt-4o-mini & embeddings)]
+```
+
+---
+
+### Step 1: Deploy Database & Backend on Railway
+
+1. **Create a Railway Project**:
+   - Go to [railway.com](https://railway.com/) and create a new project (**New Project**).
+   - Click **New Service** -> **Database** -> **Add PostgreSQL**.
+   - In PostgreSQL service settings, verify pgvector is enabled (Railway PostgreSQL enables `vector` automatically; backend also runs `CREATE EXTENSION IF NOT EXISTS vector;` on startup).
+
+2. **Deploy the Backend Service**:
+   - Click **New Service** -> **GitHub Repo** -> select `lenny-growth-assistant`.
+   - Railway will automatically detect `railway.json` and use `backend/Dockerfile`.
+   - Under **Variables**, configure the following environment variables:
+
+| Variable | Value / Description | Required |
+| :--- | :--- | :--- |
+| `DATABASE_URL` | `${{Postgres.DATABASE_URL}}` (Select from Railway Reference Variable) | **Yes** |
+| `APP_ENV` | `production` | **Yes** |
+| `DEBUG` | `false` | **Yes** |
+| `OPENAI_API_KEY` | `sk-proj-...` (Your OpenAI production API key) | **Yes** |
+| `OPENAI_MODEL` | `gpt-4o-mini` | Optional (default: `gpt-4o-mini`) |
+| `CLOUD_MODEL` | `gpt-4o-mini` | Optional (default: `gpt-4o-mini`) |
+| `EMBEDDING_PROVIDER` | `openai` | **Yes** (or `auto`) |
+| `EMBEDDING_MODEL` | `text-embedding-3-small` | Optional (default: `text-embedding-3-small`) |
+| `CORS_ORIGINS` | `https://your-frontend.vercel.app` (Add your Vercel URL once deployed) | Optional (`*.vercel.app` auto-allowed) |
+| `PORT` | Set automatically by Railway (defaults to `8000`) | Railway default |
+
+3. **Database Migrations & Auto-Seeding**:
+   - Alembic migrations run automatically on deploy via `railway.json`.
+   - On the very first startup, the backend checks chunk count: if 0 chunks exist, it automatically ingests the sample transcripts into PostgreSQL with pgvector embeddings so the service is immediately functional.
+
+4. **Verify Backend Health**:
+   - In Railway, click **Settings** -> **Generate Domain** (e.g. `https://lenny-backend.up.railway.app`).
+   - Visit `https://lenny-backend.up.railway.app/health` in your browser.
+   - You will receive:
+     ```json
+     {"status": "ok", "database": "connected", "db_dialect": "postgresql", "version": "1.0.0"}
+     ```
+
+---
+
+### Step 2: Deploy Frontend on Vercel
+
+1. **Import Repository to Vercel**:
+   - Go to [vercel.com](https://vercel.com/) and click **Add New...** -> **Project**.
+   - Select `lenny-growth-assistant` from your GitHub accounts.
+
+2. **Configure Build Settings**:
+   - **Framework Preset**: Vite
+   - **Root Directory**: `./`
+   - **Build Command**: `npm run build`
+   - **Output Directory**: `dist`
+   - **Install Command**: `npm install`
+
+3. **Add Environment Variable**:
+   - Under **Environment Variables**, add:
+     - **Name**: `VITE_API_URL`
+     - **Value**: Your Railway backend domain, e.g. `https://lenny-backend.up.railway.app` (no trailing slash).
+
+4. **Deploy**:
+   - Click **Deploy**. Vercel will build and deploy the React 19 SPA.
+   - Routing rewrites and asset caching are handled automatically by `vercel.json`.
+
+5. **Final Production Verification**:
+   - Open your deployed Vercel URL (e.g. `https://lenny-growth-assistant.vercel.app`).
+   - Notice the connection pill in the header: **API Connected (PostgreSQL)**.
+   - Select **Cloud (GPT-4o mini)** or run an inquiry:
+     > *"What does Brian Balfour say about growth loops vs funnels?"*
+   - Verify grounded citations, transcript audio-jump timestamp links, and artifact workbench rendering.
+
+---
+
 ## ⚙️ Configuration & Environment Variables
 
 Copy `.env.example` to `.env`. Key options:

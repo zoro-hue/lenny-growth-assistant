@@ -37,6 +37,23 @@ async def lifespan(app: FastAPI):
     await init_models()
     db_status, dialect = await check_database_health()
     logger.info(f"Database health: {db_status} (dialect: {dialect})")
+
+    # Auto-seed sample transcripts if database is fresh / empty
+    try:
+        from .database import get_session_maker
+        from .models.transcript import TranscriptChunkModel
+        from sqlalchemy import func, select
+        session_maker = get_session_maker()
+        async with session_maker() as session:
+            count = await session.scalar(select(func.count(TranscriptChunkModel.id)))
+            if not count or count == 0:
+                logger.info("Fresh database detected (0 transcript chunks). Running initial sample ingestion...")
+                from .services.ingestion_service import IngestionService
+                await IngestionService.ingest_source(session, source="sample")
+                logger.info("Initial sample ingestion completed successfully.")
+    except Exception as e:
+        logger.warning(f"Initial transcript auto-seed skipped or deferred: {e}")
+
     yield
     logger.info("Shutting down The Lenny Growth Assistant Backend...")
 
@@ -49,10 +66,11 @@ def create_app() -> FastAPI:
         lifespan=lifespan,
     )
 
-    # 1. CORS Configuration per Requirement 11
+    # 1. CORS Configuration supporting configured origins and Vercel deployments
     app.add_middleware(
         CORSMiddleware,
         allow_origins=settings.cors_origins_list,
+        allow_origin_regex=r"https://.*\.vercel\.app",
         allow_credentials=True,
         allow_methods=["*"],
         allow_headers=["*"],

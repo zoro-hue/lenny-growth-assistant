@@ -28,9 +28,10 @@ build/
 .coverage
 htmlcov/
 
-# Logs
+# Logs & Local Media
 *.log
 logs/
+video/
 .system_generated/
 
 # OS and Editor

@@ -15,9 +15,9 @@ class Settings(BaseSettings):
         default="postgresql+asyncpg://postgres:postgres@localhost:5432/lenny_growth",
         alias="DATABASE_URL",
     )
-    # Sync URL for Alembic
+    # Sync URL for Alembic (optional, auto-derived from DATABASE_URL if empty)
     database_sync_url: str = Field(
-        default="postgresql://postgres:postgres@localhost:5432/lenny_growth",
+        default="",
         alias="DATABASE_SYNC_URL",
     )
     # Fallback SQLite DB URL when PostgreSQL daemon is offline
@@ -59,6 +59,28 @@ class Settings(BaseSettings):
         default=os.path.join(os.path.dirname(os.path.dirname(__file__)), "data", "transcripts"),
         alias="TRANSCRIPTS_DATA_DIR",
     )
+
+    @property
+    def async_database_url(self) -> str:
+        """Returns PostgreSQL URL with asyncpg driver, normalizing Railway/Heroku postgres:// URLs."""
+        url = self.database_url
+        if url.startswith("postgres://"):
+            url = url.replace("postgres://", "postgresql+asyncpg://", 1)
+        elif url.startswith("postgresql://"):
+            url = url.replace("postgresql://", "postgresql+asyncpg://", 1)
+        return url
+
+    @property
+    def sync_database_url(self) -> str:
+        """Returns synchronous database URL for Alembic migrations."""
+        url = self.database_sync_url.strip() if self.database_sync_url and self.database_sync_url.strip() else self.database_url
+        if url.startswith("postgresql+asyncpg://"):
+            url = url.replace("postgresql+asyncpg://", "postgresql://", 1)
+        elif url.startswith("postgres://"):
+            url = url.replace("postgres://", "postgresql://", 1)
+        elif url.startswith("sqlite+aiosqlite://"):
+            url = url.replace("sqlite+aiosqlite://", "sqlite://", 1)
+        return url
 
     @property
     def cors_origins_list(self) -> List[str]:

@@ -28,12 +28,7 @@ if config.config_file_name is not None:
 
 target_metadata = Base.metadata
 
-sync_db_url = settings.database_sync_url
-if sync_db_url.startswith("postgresql+asyncpg://"):
-    sync_db_url = sync_db_url.replace("postgresql+asyncpg://", "postgresql://")
-elif sync_db_url.startswith("sqlite+aiosqlite://"):
-    sync_db_url = sync_db_url.replace("sqlite+aiosqlite://", "sqlite://")
-
+sync_db_url = settings.sync_database_url
 config.set_main_option("sqlalchemy.url", sync_db_url)
 
 

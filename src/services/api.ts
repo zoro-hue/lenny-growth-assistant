@@ -1,7 +1,7 @@
 import { Session, Message, ModelOption } from '../types/chat';
 import { Artifact } from '../types/artifact';
 
-const API_BASE = 'http://localhost:8000';
+const API_BASE = (import.meta.env.VITE_API_URL || 'http://localhost:8000').replace(/\/+$/, '');
 
 export interface HealthStatus {
   status: string;

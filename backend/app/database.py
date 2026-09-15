@@ -21,7 +21,7 @@ _active_db_url: str = ""
 def get_engine() -> AsyncEngine:
     global _engine, _async_session_maker, _active_db_url
     if _engine is None:
-        primary_url = settings.database_url
+        primary_url = settings.async_database_url
         try:
             # Create primary engine
             _engine = create_async_engine(
