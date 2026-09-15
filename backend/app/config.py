@@ -1,5 +1,5 @@
-from typing import List, Union
-from pydantic import Field
+from typing import List, Union, Any
+from pydantic import Field, field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 import os
 
@@ -36,6 +36,13 @@ class Settings(BaseSettings):
     embedding_provider: str = Field(default="auto", alias="EMBEDDING_PROVIDER")  # "auto" | "openai" | "ollama" | "mock"
     openai_api_key: str = Field(default="", alias="OPENAI_API_KEY")
     anthropic_api_key: str = Field(default="", alias="ANTHROPIC_API_KEY")
+
+    @field_validator("openai_api_key", "anthropic_api_key", mode="before")
+    @classmethod
+    def sanitize_api_keys(cls, v: Any) -> str:
+        if isinstance(v, str):
+            return v.strip().replace("\r", "").replace("\n", "")
+        return ""
     ollama_base_url: str = Field(default="http://localhost:11434", alias="OLLAMA_BASE_URL")
     # LLM & Agent configuration
     cloud_model: str = Field(default="gpt-4o-mini", alias="CLOUD_MODEL")

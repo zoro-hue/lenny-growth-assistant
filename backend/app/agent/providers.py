@@ -75,7 +75,8 @@ class OpenAIProvider(BaseLLMProvider):
     provider_name = "openai"
 
     def __init__(self, api_key: Optional[str] = None, model: Optional[str] = None, timeout: Optional[float] = None):
-        self.api_key = api_key if api_key is not None else (settings.openai_api_key or "")
+        raw_key = api_key if api_key is not None else (settings.openai_api_key or "")
+        self.api_key = raw_key.strip().replace("\r", "").replace("\n", "") if isinstance(raw_key, str) else ""
         self.model = model or settings.openai_model or settings.cloud_model or "gpt-4o-mini"
         self.timeout = timeout or settings.openai_timeout or 30.0
 

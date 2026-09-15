@@ -113,8 +113,12 @@ class PiRpcClient:
         env["PI_CODING_AGENT_DIR"] = str(self.config_dir)
         if tool_bridge_port:
             env["LENNY_TOOLS_PORT"] = str(tool_bridge_port)
-        if settings.openai_api_key:
-            env["OPENAI_API_KEY"] = settings.openai_api_key
+        raw_openai_key = settings.openai_api_key or os.environ.get("OPENAI_API_KEY", "")
+        if raw_openai_key:
+            env["OPENAI_API_KEY"] = raw_openai_key.strip().replace("\r", "").replace("\n", "")
+        raw_anthropic_key = settings.anthropic_api_key or os.environ.get("ANTHROPIC_API_KEY", "")
+        if raw_anthropic_key:
+            env["ANTHROPIC_API_KEY"] = raw_anthropic_key.strip().replace("\r", "").replace("\n", "")
         env["OLLAMA_API_KEY"] = "ollama"
 
         cmd = [
