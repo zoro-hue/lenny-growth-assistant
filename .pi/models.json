@@ -4,7 +4,7 @@
       "name": "OpenAI",
       "baseUrl": "https://api.openai.com/v1",
       "api": "openai-responses",
-      "apiKey": "OPENAI_API_KEY",
+      "apiKey": "$OPENAI_API_KEY",
       "models": [
         {
           "id": "gpt-4o-mini",
