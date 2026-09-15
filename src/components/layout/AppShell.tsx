@@ -61,6 +61,7 @@ export const AppShell: React.FC = () => {
     setSessionModel,
     addMessageToSession,
     updateMessageInSession,
+    removeMessageFromSession,
     addArtifactToSession,
     groupedSessions,
   } = useSession();
@@ -100,6 +101,23 @@ export const AppShell: React.FC = () => {
   const activeModel =
     MODEL_OPTIONS.find(m => m.id === activeSession?.activeModelId) || MODEL_OPTIONS[0];
 
+  // Helper to find the user message before an error or the last user message
+  const getLastUserPrompt = useCallback((failedMessageId?: string): string | null => {
+    if (!activeSession || activeSession.messages.length === 0) return null;
+    if (failedMessageId) {
+      const errorIdx = activeSession.messages.findIndex(m => m.id === failedMessageId);
+      if (errorIdx > 0) {
+        for (let i = errorIdx - 1; i >= 0; i--) {
+          if (activeSession.messages[i].role === 'user') {
+            return activeSession.messages[i].content;
+          }
+        }
+      }
+    }
+    const lastUser = [...activeSession.messages].reverse().find(m => m.role === 'user');
+    return lastUser ? lastUser.content : null;
+  }, [activeSession]);
+
   // Model switching with Spec E.5 system note
   const handleSelectModel = useCallback((model: ModelOption) => {
     if (activeSession && model.id !== activeSession.activeModelId) {
@@ -117,15 +135,71 @@ export const AppShell: React.FC = () => {
     }
   }, [activeSession, activeSessionId, setSessionModel, addMessageToSession, toast]);
 
-  const handleSwitchToCloud = useCallback(() => {
+  const handleSwitchToCloud = useCallback((failedMessageId?: string) => {
     const cloudModel = MODEL_OPTIONS.find(m => m.provider === 'Cloud') || MODEL_OPTIONS[0];
-    handleSelectModel(cloudModel);
-  }, [handleSelectModel]);
+    const targetModelId = cloudModel.id;
 
-  const handleSwitchToLocal = useCallback(() => {
+    if (activeSession && targetModelId !== activeSession.activeModelId) {
+      setSessionModel(activeSessionId, targetModelId);
+      addMessageToSession(activeSessionId, {
+        id: 'sys-' + Date.now(),
+        role: 'system',
+        content: `Switched to ${cloudModel.name} · ${cloudModel.provider}`,
+        timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+      });
+      toast(`Switched to ${cloudModel.name} (Cloud)`, 'info');
+    }
+
+    if (failedMessageId) {
+      removeMessageFromSession(activeSessionId, failedMessageId);
+    }
+
+    const promptToRetry = getLastUserPrompt(failedMessageId);
+    if (promptToRetry) {
+      const lower = promptToRetry.toLowerCase();
+      const isEssay = lower.includes('essay') || lower.includes('ship 30');
+      sendMessage(promptToRetry, isEssay, targetModelId, true);
+    }
+  }, [activeSession, activeSessionId, setSessionModel, addMessageToSession, removeMessageFromSession, getLastUserPrompt, sendMessage, toast]);
+
+  const handleSwitchToLocal = useCallback((failedMessageId?: string) => {
     const localModel = MODEL_OPTIONS.find(m => m.provider === 'Local') || MODEL_OPTIONS[1];
-    handleSelectModel(localModel);
-  }, [handleSelectModel]);
+    const targetModelId = localModel.id;
+
+    if (activeSession && targetModelId !== activeSession.activeModelId) {
+      setSessionModel(activeSessionId, targetModelId);
+      addMessageToSession(activeSessionId, {
+        id: 'sys-' + Date.now(),
+        role: 'system',
+        content: `Switched to ${localModel.name} · ${localModel.provider}`,
+        timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+      });
+      toast(`Switched to ${localModel.name} (Local)`, 'info');
+    }
+
+    if (failedMessageId) {
+      removeMessageFromSession(activeSessionId, failedMessageId);
+    }
+
+    const promptToRetry = getLastUserPrompt(failedMessageId);
+    if (promptToRetry) {
+      const lower = promptToRetry.toLowerCase();
+      const isEssay = lower.includes('essay') || lower.includes('ship 30');
+      sendMessage(promptToRetry, isEssay, targetModelId, true);
+    }
+  }, [activeSession, activeSessionId, setSessionModel, addMessageToSession, removeMessageFromSession, getLastUserPrompt, sendMessage, toast]);
+
+  const handleRetry = useCallback((failedMessageId?: string) => {
+    if (failedMessageId) {
+      removeMessageFromSession(activeSessionId, failedMessageId);
+    }
+    const promptToRetry = getLastUserPrompt(failedMessageId);
+    if (promptToRetry) {
+      const lower = promptToRetry.toLowerCase();
+      const isEssay = lower.includes('essay') || lower.includes('ship 30');
+      sendMessage(promptToRetry, isEssay, activeSession?.activeModelId, true);
+    }
+  }, [activeSession, activeSessionId, removeMessageFromSession, getLastUserPrompt, sendMessage]);
 
   // Global Keyboard Shortcuts (Part I)
   useEffect(() => {
@@ -256,6 +330,7 @@ export const AppShell: React.FC = () => {
               onOpenModelSelector={() => setIsModelSelectorOpen(true)}
               onSwitchToCloud={handleSwitchToCloud}
               onSwitchToLocal={handleSwitchToLocal}
+              onRetry={handleRetry}
               textareaRef={composerTextareaRef}
             />
           </main>

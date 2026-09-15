@@ -76,28 +76,53 @@ export const Composer: React.FC<ComposerProps> = ({
             </button>
           </div>
 
-          {/* Text input area */}
-          <div className="flex items-end p-2 sm:p-2.5 gap-2">
+          {/* Text input area with click-to-focus on whole box */}
+          <div
+            onClick={() => ref.current?.focus()}
+            className="flex items-end p-2 sm:p-2.5 gap-2 cursor-text"
+          >
             <textarea
               ref={ref}
               value={input}
               onChange={(e) => setInput(e.target.value)}
               onKeyDown={handleKeyDown}
-              disabled={isStreaming}
-              placeholder="Ask a question about Lenny's Podcast episodes... (press / to focus)"
+              placeholder={
+                isStreaming
+                  ? "Generating response... (you can prepare your next query)"
+                  : "Ask a question about Lenny's Podcast episodes... (press / to focus)"
+              }
               rows={1}
-              className="flex-1 bg-transparent border-none outline-none resize-none font-sans text-[15px] leading-normal text-ink-950 placeholder:text-ink-500 px-1.5 py-1 min-h-[38px] max-h-[180px]"
+              autoFocus
+              className="flex-1 bg-transparent border-none outline-none resize-none font-sans text-[15px] leading-normal text-ink-950 placeholder:text-ink-500 px-1.5 py-1 min-h-[38px] max-h-[180px] cursor-text"
             />
 
-            <button
-              type="button"
-              onClick={() => handleSend(false)}
-              disabled={!input.trim() || isStreaming}
-              aria-label="Send message"
-              className="p-2 rounded-md bg-ink-950 text-paper-0 disabled:bg-paper-200 disabled:text-ink-500 hover:bg-ink-700 transition-colors duration-fast flex-shrink-0 focus-visible:outline-evidence-600"
-            >
-              <ArrowUp className="w-4 h-4" />
-            </button>
+            {isStreaming ? (
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onSendMessage('', false); // Triggers abort
+                }}
+                title="Stop generation"
+                aria-label="Stop generation"
+                className="p-2 rounded-md bg-paper-200 text-ink-700 hover:bg-paper-300 hover:text-ink-950 transition-colors duration-fast flex-shrink-0 focus-visible:outline-evidence-600 shadow-xs"
+              >
+                <span className="w-3.5 h-3.5 block bg-ink-700 rounded-xs" />
+              </button>
+            ) : (
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleSend(false);
+                }}
+                disabled={!input.trim()}
+                aria-label="Send message"
+                className="p-2 rounded-md bg-ink-950 text-paper-0 disabled:bg-paper-200 disabled:text-ink-400 hover:bg-ink-800 transition-colors duration-fast flex-shrink-0 focus-visible:outline-evidence-600 shadow-xs"
+              >
+                <ArrowUp className="w-4 h-4" />
+              </button>
+            )}
           </div>
         </div>
 

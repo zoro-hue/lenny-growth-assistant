@@ -145,12 +145,12 @@ class RetrievalService:
         candidates = []
         for chunk, dist in rows:
             similarity = round(1.0 - float(dist), 4)
-            if similarity < threshold:
-                continue
-
             guest_lower = (chunk.guest or "").lower()
-            speaker_match = any(ts in guest_lower or guest_lower in ts for ts in target_speakers)
+            speaker_match = any(ts in guest_lower or guest_lower in ts for ts in target_speakers) if target_speakers else False
             ep_match = (target_ep is not None and chunk.episode_number == target_ep)
+
+            if similarity < threshold and not (speaker_match or ep_match):
+                continue
 
             candidates.append((chunk, similarity, speaker_match, ep_match))
 
@@ -173,7 +173,6 @@ class RetrievalService:
         stmt = (
             select(TranscriptChunkModel)
             .options(selectinload(TranscriptChunkModel.transcript))
-            .where(TranscriptChunkModel.embedding.isnot(None))
         )
         chunks = (await db.execute(stmt)).scalars().all()
 
@@ -184,10 +183,11 @@ class RetrievalService:
         for chunk in chunks:
             if chunk.embedding is not None:
                 sim = compute_cosine_similarity(query_embedding, list(chunk.embedding))
-                if sim >= threshold:
-                    guest_lower = (chunk.guest or "").lower()
-                    speaker_match = any(ts in guest_lower or guest_lower in ts for ts in target_speakers)
-                    ep_match = (target_ep is not None and chunk.episode_number == target_ep)
+                guest_lower = (chunk.guest or "").lower()
+                speaker_match = any(ts in guest_lower or guest_lower in ts for ts in target_speakers) if target_speakers else False
+                ep_match = (target_ep is not None and chunk.episode_number == target_ep)
+
+                if sim >= threshold or speaker_match or ep_match:
                     candidates.append((chunk, round(sim, 4), speaker_match, ep_match))
 
         # Priority to speaker_match, then episode_match, then similarity descending

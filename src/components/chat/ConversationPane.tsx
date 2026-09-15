@@ -14,8 +14,9 @@ interface ConversationPaneProps {
   onSendMessage: (text: string, isEssay?: boolean) => void;
   onOpenArtifact?: (artifactId: string) => void;
   onOpenModelSelector?: () => void;
-  onSwitchToCloud?: () => void;
-  onSwitchToLocal?: () => void;
+  onSwitchToCloud?: (errorMsgId?: string) => void;
+  onSwitchToLocal?: (errorMsgId?: string) => void;
+  onRetry?: (errorMsgId?: string) => void;
   textareaRef?: React.RefObject<HTMLTextAreaElement | null>;
 }
 
@@ -30,6 +31,7 @@ export const ConversationPane: React.FC<ConversationPaneProps> = ({
   onOpenModelSelector,
   onSwitchToCloud,
   onSwitchToLocal,
+  onRetry,
   textareaRef,
 }) => {
   const hasChatContent = messages.some(
@@ -58,9 +60,11 @@ export const ConversationPane: React.FC<ConversationPaneProps> = ({
           messages={messages}
           artifacts={artifacts}
           loadingStage={loadingStage}
+          activeModelId={activeModel.id}
           onOpenArtifact={onOpenArtifact}
           onSwitchToCloud={onSwitchToCloud}
           onSwitchToLocal={onSwitchToLocal}
+          onRetry={onRetry}
           onSelectSuggestion={(suggestion) => {
             const lower = suggestion.toLowerCase();
             const isEssay = lower.includes('essay') || lower.includes('ship 30');

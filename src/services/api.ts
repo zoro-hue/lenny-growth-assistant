@@ -179,7 +179,7 @@ export const api = {
           modelId,
           isEssay,
         }),
-        signal: AbortSignal.timeout(180000),
+        signal: AbortSignal.timeout(45000),
       });
       if (!res.ok) return null;
       return await res.json();

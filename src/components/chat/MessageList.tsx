@@ -9,9 +9,11 @@ interface MessageListProps {
   messages: Message[];
   artifacts?: Record<string, Artifact>;
   loadingStage: string | null;
+  activeModelId?: string;
   onOpenArtifact?: (artifactId: string) => void;
-  onSwitchToCloud?: () => void;
-  onSwitchToLocal?: () => void;
+  onSwitchToCloud?: (errorMsgId?: string) => void;
+  onSwitchToLocal?: (errorMsgId?: string) => void;
+  onRetry?: (errorMsgId?: string) => void;
   onSelectSuggestion?: (suggestion: string) => void;
 }
 
@@ -19,9 +21,11 @@ export const MessageList: React.FC<MessageListProps> = ({
   messages,
   artifacts,
   loadingStage,
+  activeModelId,
   onOpenArtifact,
   onSwitchToCloud,
   onSwitchToLocal,
+  onRetry,
   onSelectSuggestion,
 }) => {
   const bottomRef = useRef<HTMLDivElement>(null);
@@ -57,9 +61,11 @@ export const MessageList: React.FC<MessageListProps> = ({
               key={msg.id}
               message={msg}
               artifacts={artifacts}
+              activeModelId={activeModelId}
               onOpenArtifact={onOpenArtifact}
               onSwitchToCloud={onSwitchToCloud}
               onSwitchToLocal={onSwitchToLocal}
+              onRetry={onRetry}
               onSelectSuggestion={onSelectSuggestion}
             />
           );

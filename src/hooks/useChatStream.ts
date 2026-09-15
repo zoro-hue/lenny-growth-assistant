@@ -27,19 +27,40 @@ export function useChatStream({
   const abortControllerRef = useRef<boolean>(false);
 
   const sendMessage = useCallback(
-    async (content: string, isEssayRequest: boolean = false) => {
-      if (!content.trim() || isStreaming) return;
+    async (
+      content: string,
+      isEssayRequest: boolean = false,
+      overrideModelId?: string,
+      skipAddUserMessage: boolean = false
+    ) => {
+      // Allow stopping generation by sending empty string
+      if (!content.trim()) {
+        abortControllerRef.current = true;
+        setIsStreaming(false);
+        setLoadingStage(null);
+        return;
+      }
+
+      // If already streaming, abort previous request and take the new prompt
+      if (isStreaming) {
+        abortControllerRef.current = true;
+        await new Promise(r => setTimeout(r, 60));
+      }
       abortControllerRef.current = false;
 
-      // 1. Add user message
-      const userMsgId = 'msg-' + Date.now();
-      const userMsg: Message = {
-        id: userMsgId,
-        role: 'user',
-        content: content.trim(),
-        timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-      };
-      addMessage(sessionId, userMsg);
+      const effectiveModelId = overrideModelId || activeModelId;
+
+      // 1. Add user message if not retrying an already displayed message
+      if (!skipAddUserMessage) {
+        const userMsgId = 'msg-' + Date.now();
+        const userMsg: Message = {
+          id: userMsgId,
+          role: 'user',
+          content: content.trim(),
+          timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+        };
+        addMessage(sessionId, userMsg);
+      }
 
       setIsStreaming(true);
 
@@ -47,8 +68,10 @@ export function useChatStream({
       const initialStage = isEssayRequest ? 'Structuring essay…' : 'Retrieving transcripts…';
       setLoadingStage(initialStage);
       const startTime = Date.now();
-      const isLocal = activeModelId.includes('ollama') || activeModelId.includes('local');
-      const stageTimer = setInterval(() => {
+      const isLocal = effectiveModelId.includes('ollama') || effectiveModelId.includes('local');
+      let stageTimer: any = null;
+      
+      stageTimer = setInterval(() => {
         const elapsed = (Date.now() - startTime) / 1000;
         if (isEssayRequest) {
           if (elapsed > 30) setLoadingStage('Finalizing 1,250-word draft…');
@@ -63,8 +86,10 @@ export function useChatStream({
       }, 1500);
 
       try {
-        const backendRes = await api.sendChat(sessionId, content, activeModelId, isEssayRequest);
-        clearInterval(stageTimer);
+        const backendRes = await api.sendChat(sessionId, content, effectiveModelId, isEssayRequest);
+        if (stageTimer) clearInterval(stageTimer);
+        if (abortControllerRef.current) return;
+
         if (backendRes && backendRes.assistantMessage) {
           const ast = backendRes.assistantMessage;
           const assistantMsgId = ast.id || ('msg-' + (Date.now() + 2));
@@ -122,8 +147,10 @@ export function useChatStream({
         console.warn('Backend chat API call failed, falling back to local simulation:', err);
       }
 
-      // Check if current model is unavailable local model
-      if (activeModelId === 'ollama-mistral') {
+      // Fallback local simulation if backend call fails
+      try {
+        // Check if current model is unavailable local model
+        if (effectiveModelId === 'ollama-mistral') {
         setLoadingStage('Connecting to local model…');
         await new Promise(r => setTimeout(r, 700));
         const errorMsgId = 'msg-' + (Date.now() + 1);
@@ -375,9 +402,12 @@ When operators discuss this on the podcast, they emphasize focusing on compoundi
         status: 'complete',
         citations,
       });
-
+    } finally {
+      if (stageTimer) clearInterval(stageTimer);
       setIsStreaming(false);
-    },
+      setLoadingStage(null);
+    }
+  },
     [
       isStreaming,
       sessionId,

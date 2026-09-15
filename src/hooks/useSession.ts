@@ -90,7 +90,7 @@ export function useSession() {
   const createNewSession = useCallback(async () => {
     let newId = 'session-' + Date.now();
     try {
-      const remote = await api.createSession('New conversation', 'ollama-local');
+      const remote = await api.createSession('New conversation', 'openai-cloud');
       if (remote && remote.id) {
         newId = remote.id;
       }
@@ -102,7 +102,7 @@ export function useSession() {
       title: 'New conversation',
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
-      activeModelId: 'ollama-local',
+      activeModelId: 'openai-cloud',
       messages: [],
       artifactIds: [],
     };
@@ -202,6 +202,18 @@ export function useSession() {
     []
   );
 
+  const removeMessageFromSession = useCallback((sessionId: string, messageId: string) => {
+    setSessions(prev =>
+      prev.map(s => {
+        if (s.id !== sessionId) return s;
+        return {
+          ...s,
+          messages: s.messages.filter(m => m.id !== messageId),
+        };
+      })
+    );
+  }, []);
+
   const addArtifactToSession = useCallback((sessionId: string, artifactId: string) => {
     setSessions(prev =>
       prev.map(s => {
@@ -257,6 +269,7 @@ export function useSession() {
     setSessionModel,
     addMessageToSession,
     updateMessageInSession,
+    removeMessageFromSession,
     addArtifactToSession,
     groupedSessions,
   };

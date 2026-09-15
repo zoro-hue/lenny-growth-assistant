@@ -56,9 +56,9 @@ export const Sidebar: React.FC<SidebarProps> = ({
             onNewChat();
             if (isMobileDrawer) onCloseDrawer?.();
           }}
-          className="flex-1 flex items-center justify-center gap-2 py-2 px-3 rounded-pill bg-paper-0 border border-line-200 text-ink-950 font-sans text-sm font-medium hover:bg-paper-200/60 transition-colors duration-fast shadow-xs focus-visible:outline-evidence-600"
+          className="group flex-1 flex items-center justify-center gap-2 py-2 px-3 rounded-pill bg-paper-0 border border-line-200 text-ink-950 font-sans text-sm font-medium hover:bg-paper-200/60 hover:border-line-300 transition-all duration-150 shadow-xs focus-visible:outline-evidence-600"
         >
-          <Plus className="w-4 h-4 text-ink-700" />
+          <Plus className="w-4 h-4 text-ink-700 group-hover:rotate-90 transition-transform duration-200" />
           <span>New chat</span>
           <span className="text-[10px] font-mono text-ink-500 ml-auto hidden sm:inline">
             ⌘N

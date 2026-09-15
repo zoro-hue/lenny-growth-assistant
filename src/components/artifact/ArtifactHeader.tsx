@@ -30,6 +30,7 @@ export const ArtifactHeader: React.FC<ArtifactHeaderProps> = ({
   const [isEditingTitle, setIsEditingTitle] = useState(false);
   const [titleInput, setTitleInput] = useState(artifact.title);
   const [copied, setCopied] = useState(false);
+  const [downloaded, setDownloaded] = useState(false);
 
   const handleTitleSubmit = () => {
     setIsEditingTitle(false);
@@ -45,7 +46,7 @@ export const ArtifactHeader: React.FC<ArtifactHeaderProps> = ({
       await navigator.clipboard.writeText(artifact.content);
       setCopied(true);
       onCopySuccess?.();
-      setTimeout(() => setCopied(false), 2000);
+      setTimeout(() => setCopied(false), 1500);
     } catch {
       // fallback
     }
@@ -65,6 +66,8 @@ export const ArtifactHeader: React.FC<ArtifactHeaderProps> = ({
     a.click();
     document.body.removeChild(a);
     URL.revokeObjectURL(url);
+    setDownloaded(true);
+    setTimeout(() => setDownloaded(false), 1500);
   };
 
   return (
@@ -162,12 +165,18 @@ export const ArtifactHeader: React.FC<ArtifactHeaderProps> = ({
           onClick={handleCopy}
           aria-label="Copy raw document source"
           title="Copy raw markdown/html"
-          className="p-1.5 rounded text-ink-700 hover:text-ink-950 hover:bg-paper-200 transition-colors duration-fast focus-visible:outline-evidence-600"
+          className="inline-flex items-center gap-1 px-2 py-1 rounded text-ink-700 hover:text-ink-950 hover:bg-paper-200 transition-colors duration-fast focus-visible:outline-evidence-600"
         >
           {copied ? (
-            <Check className="w-3.5 h-3.5 text-evidence-600" />
+            <>
+              <Check className="w-3.5 h-3.5 text-evidence-600" />
+              <span className="text-[11px] font-mono text-evidence-700 font-medium">Copied</span>
+            </>
           ) : (
-            <Copy className="w-3.5 h-3.5" />
+            <>
+              <Copy className="w-3.5 h-3.5" />
+              <span className="text-[11px] font-mono">Copy</span>
+            </>
           )}
         </button>
 
@@ -179,7 +188,11 @@ export const ArtifactHeader: React.FC<ArtifactHeaderProps> = ({
           title="Download document file"
           className="p-1.5 rounded text-ink-700 hover:text-ink-950 hover:bg-paper-200 transition-colors duration-fast focus-visible:outline-evidence-600"
         >
-          <Download className="w-3.5 h-3.5" />
+          {downloaded ? (
+            <Check className="w-3.5 h-3.5 text-evidence-600" />
+          ) : (
+            <Download className="w-3.5 h-3.5" />
+          )}
         </button>
 
         {/* Close (x) */}

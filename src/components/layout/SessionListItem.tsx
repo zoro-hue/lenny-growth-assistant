@@ -75,9 +75,9 @@ export const SessionListItem: React.FC<SessionListItemProps> = ({
           onSelect(session.id);
         }
       }}
-      className={`group relative flex items-center justify-between px-3 py-2 cursor-pointer text-left transition-colors duration-fast select-none rounded-r focus-visible:outline-evidence-600 ${
+      className={`group relative flex items-center justify-between px-3 py-2 cursor-pointer text-left transition-all duration-150 select-none rounded-r animate-row-in focus-visible:outline-evidence-600 ${
         isActive
-          ? 'bg-paper-0/90 text-ink-950 font-medium border-l-2 border-evidence-600 shadow-xs'
+          ? 'bg-paper-0 text-ink-950 font-medium border-l-2 border-evidence-600 shadow-xs'
           : 'text-ink-700 hover:bg-paper-200/50 hover:text-ink-950 border-l-2 border-transparent'
       }`}
     >

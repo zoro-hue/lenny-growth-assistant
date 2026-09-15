@@ -44,7 +44,7 @@ export const ArtifactViewer: React.FC<ArtifactViewerProps> = ({
   return (
     <aside
       aria-label="Artifact Workbench"
-      className={`bg-paper-100 border-l border-line-200 flex flex-col h-full z-20 transition-all duration-base ease-out ${
+      className={`bg-paper-100 border-l border-line-200 flex flex-col h-full z-20 animate-workbench-in transition-all duration-base ease-out ${
         isMobileOverlay
           ? 'fixed inset-0 w-full z-50'
           : 'w-[440px] flex-shrink-0'
@@ -66,7 +66,7 @@ export const ArtifactViewer: React.FC<ArtifactViewerProps> = ({
           />
 
           {/* Body */}
-          <div className="flex-1 overflow-y-auto bg-paper-0 flex flex-col">
+          <div className="flex-1 overflow-y-auto bg-paper-0 flex flex-col animate-chip-in">
             {/* If HTML, show trust boundary strip at top */}
             {artifact.type === 'html' && format === 'rendered' && (
               <SandboxIndicator
@@ -105,10 +105,24 @@ export const ArtifactViewer: React.FC<ArtifactViewerProps> = ({
           </div>
         </>
       ) : (
-        /* Empty state per Spec F.2 */
-        <div className="flex-1 flex items-center justify-center p-6 bg-paper-0">
-          <p className="font-serif text-sm text-ink-700 text-center">
-            Generated essays and documents will appear here
+        /* Empty state matching Section 20 */
+        <div className="flex-1 flex flex-col items-center justify-center p-8 bg-paper-0 select-none text-center">
+          <span className="text-[10px] font-mono font-bold uppercase tracking-widest text-ink-500 mb-6">
+            WORKBENCH
+          </span>
+
+          {/* Simple line illustration with subtle floating animation */}
+          <div className="w-24 h-28 border border-line-300 rounded-md bg-paper-100/50 flex items-center justify-center mb-6 shadow-xs animate-floating">
+            <div className="w-7 h-7 border border-line-300 rounded-full flex items-center justify-center text-ink-400 font-mono text-base">
+              +
+            </div>
+          </div>
+
+          <p className="font-sans text-xs text-ink-500 uppercase tracking-wider mb-2">
+            Turn your research into:
+          </p>
+          <p className="font-mono text-xs text-evidence-700 font-semibold">
+            PRD · Playbook · Essay · HTML
           </p>
         </div>
       )}

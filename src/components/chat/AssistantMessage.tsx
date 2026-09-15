@@ -1,28 +1,33 @@
 import React from 'react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
-import { AlertTriangle, ArrowRight } from 'lucide-react';
+import { AlertTriangle, ArrowRight, RotateCcw } from 'lucide-react';
 import { Message } from '../../types/chat';
 import { Artifact } from '../../types/artifact';
 import { CitationList } from './CitationList';
 import { EvidenceConfidenceBadge } from './EvidenceConfidenceBadge';
 import { ArtifactGeneratedCard } from '../artifact/ArtifactGeneratedCard';
+import { ComparePerspectivesView } from './ComparePerspectivesView';
 
 interface AssistantMessageProps {
   message: Message;
   artifacts?: Record<string, Artifact>;
+  activeModelId?: string;
   onOpenArtifact?: (artifactId: string) => void;
-  onSwitchToCloud?: () => void;
-  onSwitchToLocal?: () => void;
+  onSwitchToCloud?: (errorMsgId?: string) => void;
+  onSwitchToLocal?: (errorMsgId?: string) => void;
+  onRetry?: (errorMsgId?: string) => void;
   onSelectSuggestion?: (suggestion: string) => void;
 }
 
 export const AssistantMessage: React.FC<AssistantMessageProps> = ({
   message,
   artifacts = {},
+  activeModelId,
   onOpenArtifact,
   onSwitchToCloud,
   onSwitchToLocal,
+  onRetry,
   onSelectSuggestion,
 }) => {
   const isStreaming = message.status === 'streaming';
@@ -31,8 +36,15 @@ export const AssistantMessage: React.FC<AssistantMessageProps> = ({
   const artifact = message.artifactId ? artifacts[message.artifactId] : undefined;
 
   if (isError) {
+    const isAlreadyLocal = activeModelId
+      ? activeModelId.includes('ollama') || activeModelId.includes('local')
+      : false;
+    const isAlreadyCloud = activeModelId
+      ? activeModelId.includes('openai') || activeModelId.includes('cloud')
+      : false;
+
     return (
-      <div className="my-6 max-w-[680px]">
+      <div className="my-6 max-w-[680px] animate-message-in">
         <div className="bg-error-100 text-error-700 p-4 rounded-sm border border-error-700/20 flex items-start gap-3">
           <AlertTriangle className="w-5 h-5 flex-shrink-0 mt-0.5 text-error-700" />
           <div className="flex-1">
@@ -44,23 +56,41 @@ export const AssistantMessage: React.FC<AssistantMessageProps> = ({
                 "Couldn't reach the model provider. Check connection settings or switch models."}
             </p>
             <div className="flex flex-wrap items-center gap-2">
+              {onRetry && (
+                <button
+                  type="button"
+                  onClick={() => onRetry(message.id)}
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-paper-0 border border-line-300 rounded text-xs font-sans font-medium text-ink-950 hover:bg-paper-100 transition-colors duration-fast shadow-sm"
+                >
+                  <RotateCcw className="w-3.5 h-3.5 text-ink-600" />
+                  <span>Retry Query</span>
+                </button>
+              )}
               {message.errorDetails?.canSwitchToCloud && onSwitchToCloud && (
                 <button
                   type="button"
-                  onClick={onSwitchToCloud}
+                  onClick={() => onSwitchToCloud(message.id)}
                   className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-paper-0 border border-line-300 rounded text-xs font-sans font-medium text-ink-950 hover:bg-paper-100 transition-colors duration-fast focus-visible:outline-evidence-600 shadow-sm"
                 >
-                  <span>Switch to Cloud (OpenAI GPT-4o mini)</span>
+                  <span>
+                    {isAlreadyCloud
+                      ? 'Retry with Cloud Model (OpenAI GPT-4o mini)'
+                      : 'Switch to Cloud Model (OpenAI GPT-4o mini)'}
+                  </span>
                   <ArrowRight className="w-3.5 h-3.5 text-evidence-600" />
                 </button>
               )}
               {message.errorDetails?.canSwitchToLocal && onSwitchToLocal && (
                 <button
                   type="button"
-                  onClick={onSwitchToLocal}
+                  onClick={() => onSwitchToLocal(message.id)}
                   className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-paper-0 border border-line-300 rounded text-xs font-sans font-medium text-ink-950 hover:bg-paper-100 transition-colors duration-fast focus-visible:outline-evidence-600 shadow-sm"
                 >
-                  <span>Switch to Local Model (Ollama Llama 3.2 3B)</span>
+                  <span>
+                    {isAlreadyLocal
+                      ? 'Retry with Local Model (Ollama Llama 3.2 3B)'
+                      : 'Switch to Local Model (Ollama Llama 3.2 3B)'}
+                  </span>
                   <ArrowRight className="w-3.5 h-3.5 text-evidence-600" />
                 </button>
               )}
@@ -104,79 +134,95 @@ export const AssistantMessage: React.FC<AssistantMessageProps> = ({
 
   return (
     <div
-      className={`my-6 max-w-[680px] transition-all duration-base ${
+      className={`my-6 max-w-[680px] animate-message-in transition-all duration-base ${
         isLowEvidence ? 'border-l-2 border-signal-amber-600 pl-4 py-1' : ''
       }`}
     >
       {/* Evidence confidence badge (NOT GROUNDED for low evidence, or HIGH/LIMITED above citations) */}
       {isLowEvidence && (
-        <EvidenceConfidenceBadge
-          type="not-grounded"
-          label={evidenceLabel}
-        />
+        <div className="mb-3 p-3.5 bg-paper-100 border border-line-300 rounded-md">
+          <div className="flex items-center gap-2 mb-2 text-ink-700">
+            <EvidenceConfidenceBadge
+              type="not-grounded"
+              label={evidenceLabel}
+            />
+          </div>
+          <div className="font-serif text-[15.5px] leading-relaxed text-ink-800">
+            <ReactMarkdown remarkPlugins={[remarkGfm]}>
+              {message.content}
+            </ReactMarkdown>
+          </div>
+        </div>
       )}
 
-      {/* Message body in Source Serif 4 */}
-      <div className="font-serif text-[17px] leading-[1.75] text-ink-950">
-        <ReactMarkdown
-          remarkPlugins={[remarkGfm]}
-          components={{
-            h1: ({ children }) => (
-              <h2 className="font-sans font-semibold text-lg text-ink-950 mt-5 mb-2">
-                {children}
-              </h2>
-            ),
-            h2: ({ children }) => (
-              <h3 className="font-sans font-semibold text-base text-ink-950 mt-4 mb-2">
-                {children}
-              </h3>
-            ),
-            h3: ({ children }) => (
-              <h4 className="font-sans font-semibold text-sm text-ink-950 mt-3 mb-1.5">
-                {children}
-              </h4>
-            ),
-            p: ({ children }) => <p className="mb-3.5 last:mb-0">{children}</p>,
-            ul: ({ children }) => (
-              <ul className="list-disc pl-5 mb-3.5 space-y-1">{children}</ul>
-            ),
-            ol: ({ children }) => (
-              <ol className="list-decimal pl-5 mb-3.5 space-y-1">{children}</ol>
-            ),
-            li: ({ children }) => <li>{children}</li>,
-            blockquote: ({ children }) => (
-              <blockquote className="border-l-2 border-evidence-600 pl-4 my-3 italic text-ink-700">
-                {children}
-              </blockquote>
-            ),
-            code: ({ children, className }) => {
-              const isBlock = className && className.includes('language-');
-              if (isBlock) {
-                return (
-                  <code className="block font-mono text-xs bg-paper-100 p-3 rounded-md border border-line-200 overflow-x-auto text-ink-950 my-2">
+      {/* Message body in Source Serif 4 or ComparePerspectivesView */}
+      {!isLowEvidence && (
+        <div className="font-serif text-[17px] leading-[1.75] text-ink-950">
+          {message.content.includes('## COMPARE PERSPECTIVES') &&
+          message.content.includes('### Synthesis') ? (
+            <ComparePerspectivesView content={message.content} />
+          ) : (
+            <ReactMarkdown
+              remarkPlugins={[remarkGfm]}
+              components={{
+                h1: ({ children }) => (
+                  <h2 className="font-sans font-semibold text-lg text-ink-950 mt-5 mb-2">
                     {children}
-                  </code>
-                );
-              }
-              return (
-                <code className="font-mono text-xs bg-paper-100 px-1.5 py-0.5 rounded text-ink-950 border border-line-200">
-                  {children}
-                </code>
-              );
-            },
-          }}
-        >
-          {message.content}
-        </ReactMarkdown>
+                  </h2>
+                ),
+                h2: ({ children }) => (
+                  <h3 className="font-sans font-semibold text-base text-ink-950 mt-4 mb-2">
+                    {children}
+                  </h3>
+                ),
+                h3: ({ children }) => (
+                  <h4 className="font-sans font-semibold text-sm text-ink-950 mt-3 mb-1.5">
+                    {children}
+                  </h4>
+                ),
+                p: ({ children }) => <p className="mb-3.5 last:mb-0">{children}</p>,
+                ul: ({ children }) => (
+                  <ul className="list-disc pl-5 mb-3.5 space-y-1">{children}</ul>
+                ),
+                ol: ({ children }) => (
+                  <ol className="list-decimal pl-5 mb-3.5 space-y-1">{children}</ol>
+                ),
+                li: ({ children }) => <li>{children}</li>,
+                blockquote: ({ children }) => (
+                  <blockquote className="border-l-2 border-evidence-600 pl-4 my-3 italic text-ink-700">
+                    {children}
+                  </blockquote>
+                ),
+                code: ({ children, className }) => {
+                  const isBlock = className && className.includes('language-');
+                  if (isBlock) {
+                    return (
+                      <code className="block font-mono text-xs bg-paper-100 p-3 rounded-md border border-line-200 overflow-x-auto text-ink-950 my-2">
+                        {children}
+                      </code>
+                    );
+                  }
+                  return (
+                    <code className="font-mono text-xs bg-paper-100 px-1.5 py-0.5 rounded text-ink-950 border border-line-200">
+                      {children}
+                    </code>
+                  );
+                },
+              }}
+            >
+              {message.content}
+            </ReactMarkdown>
+          )}
 
-        {/* Streaming caret */}
-        {isStreaming && (
-          <span
-            className="inline-block w-1.5 h-4 ml-0.5 bg-evidence-600 animate-pulse-dot align-middle"
-            aria-hidden="true"
-          />
-        )}
-      </div>
+          {/* Streaming caret */}
+          {isStreaming && (
+            <span
+              className="inline-block w-1.5 h-4 ml-0.5 bg-evidence-600 animate-pulse-dot align-middle"
+              aria-hidden="true"
+            />
+          )}
+        </div>
+      )}
 
       {/* Inline Artifact Generated Card */}
       {artifact && onOpenArtifact && (
@@ -185,22 +231,14 @@ export const AssistantMessage: React.FC<AssistantMessageProps> = ({
 
       {/* Citations List with Evidence Strength Indicator */}
       {!isLowEvidence && citations.length > 0 && (
-        <div className="mt-4 pt-3 border-t border-line-200">
-          <div className="mb-2">
-            <EvidenceConfidenceBadge
-              type={evidenceType}
-              label={evidenceLabel}
-            />
-          </div>
-          <CitationList citations={citations} />
-        </div>
+        <CitationList citations={citations} />
       )}
 
-      {/* Contextual Follow-up Suggestions ("Explore this further") */}
+      {/* Contextual Follow-up Suggestions ("EXPLORE THIS") */}
       {!isStreaming && !isError && suggestions.length > 0 && (
-        <div className="mt-5 pt-3 border-t border-line-200/60">
-          <div className="text-[11px] font-sans font-semibold text-ink-500 uppercase tracking-wider mb-2 select-none">
-            Explore this further
+        <div className="mt-5 pt-3 border-t border-line-200/70">
+          <div className="text-[10px] font-mono font-bold text-ink-500 uppercase tracking-widest mb-2 select-none">
+            EXPLORE THIS
           </div>
           <div className="flex flex-wrap gap-2">
             {suggestions.map((suggestion, idx) => (
@@ -208,9 +246,12 @@ export const AssistantMessage: React.FC<AssistantMessageProps> = ({
                 key={idx}
                 type="button"
                 onClick={() => onSelectSuggestion?.(suggestion)}
-                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded bg-paper-100 hover:bg-paper-200/90 border border-line-200 text-xs font-sans text-ink-900 transition-colors duration-fast text-left shadow-xs focus-visible:outline-evidence-600"
+                style={{ animationDelay: `${idx * 45}ms` }}
+                className="group inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md bg-paper-100 hover:bg-paper-200/90 border border-line-200 text-xs font-sans text-ink-900 transition-all duration-150 hover:-translate-y-0.5 hover:shadow-xs text-left shadow-xs focus-visible:outline-evidence-600 animate-chip-in"
               >
-                <span className="text-evidence-600 font-bold text-xs">→</span>
+                <span className="text-evidence-600 font-bold text-xs transform group-hover:translate-x-0.5 transition-transform duration-150">
+                  →
+                </span>
                 <span>{suggestion}</span>
               </button>
             ))}
