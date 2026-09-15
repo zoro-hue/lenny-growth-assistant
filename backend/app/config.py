@@ -61,23 +61,91 @@ class Settings(BaseSettings):
     )
 
     @property
+    def is_production(self) -> bool:
+        """Indicates whether running in a production deployment."""
+        return self.app_env.strip().lower() in ("production", "prod")
+
+    @property
+    def effective_database_url(self) -> str:
+        """
+        Discovers database URL prioritizing explicit DATABASE_URL, Railway environment variables,
+        and individual PG* connection components.
+        """
+        url = self.database_url.strip() if self.database_url else ""
+
+        # If DATABASE_URL is unset or default localhost, check Railway / cloud env variables
+        if not url or "localhost:5432" in url:
+            for key in ("DATABASE_URL", "DATABASE_PRIVATE_URL", "DATABASE_PUBLIC_URL", "POSTGRES_URL", "DATABASE_URL_UNPOOLED"):
+                val = os.getenv(key)
+                if val and val.strip() and not ("localhost:5432" in val and self.is_production):
+                    return val.strip()
+
+            if os.getenv("PGHOST"):
+                pghost = os.getenv("PGHOST", "").strip()
+                pguser = os.getenv("PGUSER", "postgres").strip()
+                pgpwd = os.getenv("PGPASSWORD", "").strip()
+                pgport = os.getenv("PGPORT", "5432").strip()
+                pgdb = os.getenv("PGDATABASE", "railway").strip()
+                auth = f"{pguser}:{pgpwd}@" if pguser else ""
+                return f"postgresql://{auth}{pghost}:{pgport}/{pgdb}"
+
+        return url
+
+    @property
     def async_database_url(self) -> str:
-        """Returns PostgreSQL URL with asyncpg driver, normalizing Railway/Heroku postgres:// URLs."""
-        url = self.database_url
+        """Returns PostgreSQL URL with asyncpg driver, normalizing Railway/Heroku postgres:// URLs and query params."""
+        url = self.effective_database_url.strip()
+
+        if self.is_production:
+            if not url or "localhost:5432" in url:
+                raise ValueError(
+                    "APP_ENV is set to production, but DATABASE_URL is missing or set to localhost. "
+                    "A valid PostgreSQL DATABASE_URL (e.g. from Railway PostgreSQL ${{Postgres.DATABASE_URL}}) is required."
+                )
+
         if url.startswith("postgres://"):
             url = url.replace("postgres://", "postgresql+asyncpg://", 1)
         elif url.startswith("postgresql://"):
             url = url.replace("postgresql://", "postgresql+asyncpg://", 1)
+        elif url.startswith("postgresql+psycopg2://"):
+            url = url.replace("postgresql+psycopg2://", "postgresql+asyncpg://", 1)
+        elif url.startswith("postgresql+psycopg://"):
+            url = url.replace("postgresql+psycopg://", "postgresql+asyncpg://", 1)
+
+        # Normalize query params for asyncpg (e.g. sslmode -> ssl)
+        if "sslmode=" in url:
+            from urllib.parse import urlparse, parse_qs, urlencode, urlunparse
+            p = urlparse(url)
+            qs = parse_qs(p.query)
+            if "sslmode" in qs:
+                mode = qs.pop("sslmode")[0]
+                if mode in ("require", "verify-ca", "verify-full"):
+                    qs["ssl"] = ["require"]
+            new_query = urlencode(qs, doseq=True)
+            url = urlunparse((p.scheme, p.netloc, p.path, p.params, new_query, p.fragment))
+
         return url
 
     @property
     def sync_database_url(self) -> str:
         """Returns synchronous database URL for Alembic migrations."""
-        url = self.database_sync_url.strip() if self.database_sync_url and self.database_sync_url.strip() else self.database_url
+        sync_url = self.database_sync_url.strip() if self.database_sync_url else ""
+        # If explicit sync URL is unset or pointing to localhost while primary DB is remote, derive from primary DB
+        if not sync_url or ("localhost:5432" in sync_url and "localhost:5432" not in self.effective_database_url):
+            url = self.effective_database_url
+        else:
+            url = sync_url
+
+        url = url.strip()
+
         if url.startswith("postgresql+asyncpg://"):
             url = url.replace("postgresql+asyncpg://", "postgresql://", 1)
         elif url.startswith("postgres://"):
             url = url.replace("postgres://", "postgresql://", 1)
+        elif url.startswith("postgresql+psycopg2://"):
+            url = url.replace("postgresql+psycopg2://", "postgresql://", 1)
+        elif url.startswith("postgresql+psycopg://"):
+            url = url.replace("postgresql+psycopg://", "postgresql://", 1)
         elif url.startswith("sqlite+aiosqlite://"):
             url = url.replace("sqlite+aiosqlite://", "sqlite://", 1)
         return url

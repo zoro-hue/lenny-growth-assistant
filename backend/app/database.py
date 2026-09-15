@@ -18,6 +18,19 @@ _async_session_maker: async_sessionmaker[AsyncSession] | None = None
 _active_db_url: str = ""
 
 
+def mask_db_url(url: str) -> str:
+    """Masks database credentials for safe logging without exposing passwords."""
+    if not url:
+        return "<empty>"
+    try:
+        from sqlalchemy.engine.url import make_url
+        u = make_url(url)
+        return u.render_as_string(hide_password=True)
+    except Exception:
+        import re
+        return re.sub(r"://([^:]+):([^@]+)@", r"://\1:***@", url)
+
+
 def get_engine() -> AsyncEngine:
     global _engine, _async_session_maker, _active_db_url
     if _engine is None:
@@ -36,10 +49,17 @@ def get_engine() -> AsyncEngine:
                 expire_on_commit=False,
                 class_=AsyncSession,
             )
-            logger.info(f"Initialized primary database engine with URL: {primary_url}")
+            logger.info(f"Initialized primary database engine with URL: {mask_db_url(primary_url)}")
         except Exception as e:
+            if settings.is_production:
+                logger.error(
+                    f"Failed to create production database engine ({mask_db_url(primary_url)}): {e}. "
+                    "Production MUST NOT fall back to SQLite."
+                )
+                raise DatabaseConnectionError(f"Failed to create production database engine: {e}") from e
+
             logger.warning(
-                f"Failed to create primary database engine ({primary_url}): {e}. "
+                f"Failed to create primary database engine ({mask_db_url(primary_url)}): {e}. "
                 f"Falling back to SQLite: {settings.sqlite_fallback_url}"
             )
             _engine = create_async_engine(
@@ -93,6 +113,10 @@ async def check_database_health() -> Tuple[str, str]:
             return "unexpected_result", engine.dialect.name
     except Exception as e:
         logger.warning(f"Database health check failed: {e}")
+        if settings.is_production:
+            # In production, never silently switch to SQLite!
+            return "error", "postgresql"
+
         # If primary PostgreSQL failed and we haven't switched yet, switch to fallback
         if "sqlite" not in _active_db_url and settings.sqlite_fallback_url:
             logger.info(f"Switching database engine to fallback SQLite: {settings.sqlite_fallback_url}")
@@ -112,6 +136,12 @@ async def check_database_health() -> Tuple[str, str]:
 def switch_to_fallback():
     """Switches the active engine to the local SQLite fallback."""
     global _engine, _async_session_maker, _active_db_url
+    if settings.is_production:
+        raise DatabaseConnectionError(
+            "Attempted to switch to SQLite fallback in production environment! "
+            "Production MUST use Railway PostgreSQL with pgvector."
+        )
+
     _active_db_url = settings.sqlite_fallback_url
     _engine = create_async_engine(
         settings.sqlite_fallback_url,
@@ -137,15 +167,24 @@ async def init_models():
         async with engine.begin() as conn:
             if engine.dialect.name == "postgresql":
                 await conn.execute(text('CREATE EXTENSION IF NOT EXISTS vector;'))
-                await conn.execute(text('CREATE EXTENSION IF NOT EXISTS "uuid-ossp";'))
+                try:
+                    await conn.execute(text('CREATE EXTENSION IF NOT EXISTS "uuid-ossp";'))
+                except Exception as ex:
+                    logger.debug(f"uuid-ossp extension skipped or deferred: {ex}")
             await conn.run_sync(Base.metadata.create_all)
             if engine.dialect.name == "postgresql":
                 await conn.execute(text(
                     'CREATE INDEX IF NOT EXISTS ix_transcript_chunks_embedding ON transcript_chunks '
                     'USING hnsw (embedding vector_cosine_ops);'
                 ))
-        logger.info("Database tables verified/created successfully.")
+        logger.info(f"Database tables verified/created successfully on dialect: {engine.dialect.name}")
     except Exception as e:
+        if settings.is_production:
+            logger.error(f"Failed to initialize database tables on production DB: {e}", exc_info=True)
+            raise DatabaseConnectionError(
+                f"Production PostgreSQL table initialization failed: {e}"
+            ) from e
+
         logger.warning(f"Failed to auto-create tables on primary DB ({e}). Trying fallback SQLite...")
         switch_to_fallback()
         engine = get_engine()
